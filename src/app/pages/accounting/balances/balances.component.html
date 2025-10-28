@@ -1,0 +1,423 @@
+<div class="container-fluid main-container">
+  <!-- Header -->
+  <app-navbar></app-navbar>
+
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-chart-bar text-primary me-2"></i>Balances Contables
+        </h2>
+        <p class="text-muted mb-0">Balance General y Estado de Resultados</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-success btn-custom" (click)="exportReport()" [disabled]="!balanceSheet && !incomeStatement">
+          <i class="fas fa-download me-2"></i>Exportar
+        </button>
+        <button class="btn btn-info btn-custom" (click)="printReport()" [disabled]="!balanceSheet && !incomeStatement">
+          <i class="fas fa-print me-2"></i>Imprimir
+      </button>
+    </div>
+  </div>
+
+  <!-- Report Generation Form -->
+  <div class="card card-custom mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">
+        <i class="fas fa-cog me-2"></i>Generar Reporte
+      </h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="reportForm" (ngSubmit)="generateReport()">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Tipo de Reporte *</label>
+            <select 
+              class="form-select"
+              formControlName="reportType"
+              (change)="onReportTypeChange()"
+            >
+              <option value="balance-sheet">Balance General</option>
+              <option value="income-statement">Estado de Resultados</option>
+            </select>
+          </div>
+
+          <div class="col-md-3" *ngIf="selectedReport === 'balance-sheet'">
+            <label class="form-label">Fecha del Balance *</label>
+            <input 
+              type="date" 
+              class="form-control"
+              formControlName="date"
+            >
+          </div>
+
+          <div class="col-md-3" *ngIf="selectedReport === 'income-statement'">
+            <label class="form-label">Fecha Inicio *</label>
+            <input 
+              type="date" 
+              class="form-control"
+              formControlName="periodStart"
+            >
+          </div>
+
+          <div class="col-md-3" *ngIf="selectedReport === 'income-statement'">
+            <label class="form-label">Fecha Fin *</label>
+            <input 
+              type="date" 
+              class="form-control"
+              formControlName="periodEnd"
+            >
+          </div>
+
+          <div class="col-md-3 d-flex align-items-end">
+            <button 
+              type="submit" 
+              class="btn btn-primary w-100"
+              [disabled]="reportForm.invalid || isGenerating"
+            >
+              <span *ngIf="isGenerating" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!isGenerating" class="fas fa-play me-2"></i>
+              {{ isGenerating ? 'Generando...' : 'Generar Reporte' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Balance Sheet -->
+  <div *ngIf="balanceSheet" class="card card-custom">
+    <div class="card-header bg-success text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-balance-scale me-2"></i>Balance General
+        </h5>
+        <span class="badge bg-light text-dark">{{formatDate(balanceSheet.date)}}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <!-- Assets -->
+        <div class="col-md-6">
+          <h6 class="text-primary mb-3">
+            <i class="fas fa-coins me-2"></i>ACTIVOS
+          </h6>
+          
+          <!-- Current Assets -->
+          <div class="mb-3">
+            <h6 class="text-muted">Activos Corrientes</h6>
+            <div class="ps-3">
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.assets.accounts, AccountCategory.CASH_AND_EQUIVALENTS)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.assets.accounts, AccountCategory.ACCOUNTS_RECEIVABLE)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.assets.accounts, AccountCategory.INVENTORY)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between fw-bold text-primary">
+                <span>Total Activos Corrientes</span>
+                <span>{{formatCurrency(getCategoryTotal(balanceSheet.assets.accounts, AccountCategory.CASH_AND_EQUIVALENTS) + getCategoryTotal(balanceSheet.assets.accounts, AccountCategory.ACCOUNTS_RECEIVABLE) + getCategoryTotal(balanceSheet.assets.accounts, AccountCategory.INVENTORY))}}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fixed Assets -->
+          <div class="mb-3">
+            <h6 class="text-muted">Activos Fijos</h6>
+            <div class="ps-3">
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.assets.accounts, AccountCategory.FIXED_ASSETS)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between fw-bold text-primary">
+                <span>Total Activos Fijos</span>
+                <span>{{formatCurrency(getCategoryTotal(balanceSheet.assets.accounts, AccountCategory.FIXED_ASSETS))}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between fw-bold text-success fs-5">
+              <span>TOTAL ACTIVOS</span>
+              <span>{{formatCurrency(balanceSheet.totalAssets)}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liabilities and Equity -->
+        <div class="col-md-6">
+          <h6 class="text-warning mb-3">
+            <i class="fas fa-credit-card me-2"></i>PASIVOS
+          </h6>
+          
+          <!-- Current Liabilities -->
+          <div class="mb-3">
+            <h6 class="text-muted">Pasivos Corrientes</h6>
+            <div class="ps-3">
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.liabilities.accounts, AccountCategory.ACCOUNTS_PAYABLE)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.liabilities.accounts, AccountCategory.CURRENT_LIABILITIES)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between fw-bold text-warning">
+                <span>Total Pasivos Corrientes</span>
+                <span>{{formatCurrency(getCategoryTotal(balanceSheet.liabilities.accounts, AccountCategory.ACCOUNTS_PAYABLE) + getCategoryTotal(balanceSheet.liabilities.accounts, AccountCategory.CURRENT_LIABILITIES))}}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Long-term Liabilities -->
+          <div class="mb-3">
+            <h6 class="text-muted">Pasivos a Largo Plazo</h6>
+            <div class="ps-3">
+              <ng-container *ngFor="let account of getAccountsByCategory(balanceSheet.liabilities.accounts, AccountCategory.LONG_TERM_LIABILITIES)">
+                <div class="d-flex justify-content-between">
+                  <span>{{account.accountCode}} - {{account.accountName}}</span>
+                  <strong>{{formatCurrency(account.balance)}}</strong>
+                </div>
+              </ng-container>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between fw-bold text-warning">
+                <span>Total Pasivos a Largo Plazo</span>
+                <span>{{formatCurrency(getCategoryTotal(balanceSheet.liabilities.accounts, AccountCategory.LONG_TERM_LIABILITIES))}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex justify-content-between fw-bold text-warning fs-6">
+              <span>TOTAL PASIVOS</span>
+              <span>{{formatCurrency(balanceSheet.liabilities.total)}}</span>
+            </div>
+          </div>
+
+          <!-- Equity -->
+          <h6 class="text-info mb-3">
+            <i class="fas fa-piggy-bank me-2"></i>PATRIMONIO
+          </h6>
+          <div class="mb-3">
+            <div class="ps-3">
+              <div *ngFor="let account of balanceSheet.equity.accounts" class="d-flex justify-content-between">
+                <span>{{account.accountCode}} - {{account.accountName}}</span>
+                <strong>{{formatCurrency(account.balance)}}</strong>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between fw-bold text-info">
+                <span>TOTAL PATRIMONIO</span>
+                <span>{{formatCurrency(balanceSheet.equity.total)}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between fw-bold text-success fs-5">
+              <span>TOTAL PASIVOS + PATRIMONIO</span>
+              <span>{{formatCurrency(balanceSheet.totalLiabilitiesAndEquity)}}</span>
+            </div>
+          </div>
+
+          <!-- Balance Verification -->
+          <div class="mt-3 p-3 rounded" [class]="balanceSheet.totalAssets === balanceSheet.totalLiabilitiesAndEquity ? 'bg-success bg-opacity-10 border border-success' : 'bg-danger bg-opacity-10 border border-danger'">
+            <div class="d-flex justify-content-between fw-bold">
+              <span>Estado del Balance:</span>
+              <span [class]="balanceSheet.totalAssets === balanceSheet.totalLiabilitiesAndEquity ? 'text-success' : 'text-danger'">
+                <i class="fas" [class]="balanceSheet.totalAssets === balanceSheet.totalLiabilitiesAndEquity ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
+                {{balanceSheet.totalAssets === balanceSheet.totalLiabilitiesAndEquity ? 'BALANCEADO' : 'DESBALANCEADO'}}
+              </span>
+            </div>
+            <small class="text-muted">
+              Diferencia: {{formatCurrency(balanceSheet.totalAssets - balanceSheet.totalLiabilitiesAndEquity)}}
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Income Statement -->
+  <div *ngIf="incomeStatement" class="card card-custom">
+    <div class="card-header bg-info text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-line me-2"></i>Estado de Resultados
+        </h5>
+        <span class="badge bg-light text-dark">
+          {{formatDate(incomeStatement.periodStart)}} - {{formatDate(incomeStatement.periodEnd)}}
+        </span>
+      </div>
+    </div>
+    <div class="card-body">
+      <!-- Revenue Section -->
+      <div class="mb-4">
+        <h6 class="text-success mb-3">
+          <i class="fas fa-arrow-up me-2"></i>INGRESOS
+        </h6>
+        <div class="ps-3">
+          <ng-container *ngFor="let account of getAccountsByCategory(incomeStatement.revenue.accounts, AccountCategory.OPERATING_REVENUE)">
+            <div class="d-flex justify-content-between">
+              <span>{{account.accountCode}} - {{account.accountName}}</span>
+              <strong class="text-success">{{formatCurrency(account.balance)}}</strong>
+            </div>
+          </ng-container>
+          <ng-container *ngFor="let account of getAccountsByCategory(incomeStatement.revenue.accounts, AccountCategory.OTHER_REVENUE)">
+            <div class="d-flex justify-content-between">
+              <span>{{account.accountCode}} - {{account.accountName}}</span>
+              <strong class="text-success">{{formatCurrency(account.balance)}}</strong>
+            </div>
+          </ng-container>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between fw-bold text-success fs-6">
+            <span>TOTAL INGRESOS</span>
+            <span>{{formatCurrency(incomeStatement.revenue.total)}}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expenses Section -->
+      <div class="mb-4">
+        <h6 class="text-danger mb-3">
+          <i class="fas fa-arrow-down me-2"></i>GASTOS
+        </h6>
+        
+        <!-- Cost of Sales -->
+        <div class="mb-3">
+          <h6 class="text-muted">Costo de Ventas</h6>
+          <div class="ps-3">
+            <ng-container *ngFor="let account of getAccountsByCategory(incomeStatement.expenses.accounts, AccountCategory.OPERATING_EXPENSES)">
+              <div *ngIf="account.accountCode.startsWith('5000')" class="d-flex justify-content-between">
+                <span>{{account.accountCode}} - {{account.accountName}}</span>
+                <strong class="text-danger">{{formatCurrency(account.balance)}}</strong>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Gross Profit -->
+        <div class="mb-3 p-2 bg-light rounded">
+          <div class="d-flex justify-content-between fw-bold text-primary">
+            <span>UTILIDAD BRUTA</span>
+            <span>{{formatCurrency(incomeStatement.grossProfit)}}</span>
+          </div>
+        </div>
+
+        <!-- Operating Expenses -->
+        <div class="mb-3">
+          <h6 class="text-muted">Gastos Operacionales</h6>
+          <div class="ps-3">
+            <ng-container *ngFor="let account of getAccountsByCategory(incomeStatement.expenses.accounts, AccountCategory.OPERATING_EXPENSES)">
+              <div *ngIf="!account.accountCode.startsWith('5000')" class="d-flex justify-content-between">
+                <span>{{account.accountCode}} - {{account.accountName}}</span>
+                <strong class="text-danger">{{formatCurrency(account.balance)}}</strong>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Administrative Expenses -->
+        <div class="mb-3">
+          <h6 class="text-muted">Gastos Administrativos</h6>
+          <div class="ps-3">
+            <ng-container *ngFor="let account of getAccountsByCategory(incomeStatement.expenses.accounts, AccountCategory.ADMINISTRATIVE_EXPENSES)">
+              <div class="d-flex justify-content-between">
+                <span>{{account.accountCode}} - {{account.accountName}}</span>
+                <strong class="text-danger">{{formatCurrency(account.balance)}}</strong>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Financial Expenses -->
+        <div class="mb-3">
+          <h6 class="text-muted">Gastos Financieros</h6>
+          <div class="ps-3">
+            <ng-container *ngFor="let account of getAccountsByCategory(incomeStatement.expenses.accounts, AccountCategory.FINANCIAL_EXPENSES)">
+              <div class="d-flex justify-content-between">
+                <span>{{account.accountCode}} - {{account.accountName}}</span>
+                <strong class="text-danger">{{formatCurrency(account.balance)}}</strong>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <hr class="my-2">
+        <div class="d-flex justify-content-between fw-bold text-danger fs-6">
+          <span>TOTAL GASTOS</span>
+          <span>{{formatCurrency(incomeStatement.expenses.total)}}</span>
+        </div>
+      </div>
+
+      <!-- Net Profit -->
+      <div class="border-top pt-3">
+        <div class="d-flex justify-content-between fw-bold fs-5" [class]="incomeStatement.netProfit >= 0 ? 'text-success' : 'text-danger'">
+          <span>{{incomeStatement.netProfit >= 0 ? 'UTILIDAD NETA' : 'PÉRDIDA NETA'}}</span>
+          <span>{{formatCurrency(incomeStatement.netProfit)}}</span>
+        </div>
+      </div>
+
+      <!-- Profitability Metrics -->
+      <div class="row mt-4">
+        <div class="col-md-12">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h6 class="card-title">Indicadores de Rentabilidad</h6>
+              <div class="row text-center">
+                <div class="col-md-3">
+                  <h5 class="text-primary">{{((incomeStatement.grossProfit / incomeStatement.revenue.total) * 100).toFixed(2)}}%</h5>
+                  <small class="text-muted">Margen Bruto</small>
+                </div>
+                <div class="col-md-3">
+                  <h5 class="text-info">{{((incomeStatement.netProfit / incomeStatement.revenue.total) * 100).toFixed(2)}}%</h5>
+                  <small class="text-muted">Margen Neto</small>
+                </div>
+                <div class="col-md-3">
+                  <h5 class="text-success">{{formatCurrency(incomeStatement.revenue.total / 30)}}</h5>
+                  <small class="text-muted">Ingresos Promedio Diario</small>
+                </div>
+                <div class="col-md-3">
+                  <h5 [class]="incomeStatement.netProfit >= 0 ? 'text-success' : 'text-danger'">
+                    {{incomeStatement.netProfit >= 0 ? 'RENTABLE' : 'PÉRDIDAS'}}
+                  </h5>
+                  <small class="text-muted">Estado</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Report Message -->
+  <div *ngIf="!balanceSheet && !incomeStatement" class="card card-custom">
+    <div class="card-body text-center py-5">
+      <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+      <h5 class="text-muted">No hay reportes generados</h5>
+      <p class="text-muted">Selecciona un tipo de reporte y haz clic en "Generar Reporte" para comenzar</p>
+    </div>
+  </div>
+  </div>
+</div>

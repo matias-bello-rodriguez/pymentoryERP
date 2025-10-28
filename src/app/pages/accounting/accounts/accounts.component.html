@@ -1,0 +1,281 @@
+<div class="container-fluid main-container">
+  <!-- Header -->
+  <app-navbar></app-navbar>
+
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-list-alt text-primary me-2"></i>Plan de Cuentas
+        </h2>
+        <p class="text-muted mb-0">Gestiona el catálogo de cuentas contables</p>
+      </div>
+      <button class="btn btn-primary btn-custom" (click)="showForm = !showForm">
+        <i class="fas fa-plus me-2"></i>Nueva Cuenta
+      </button>
+    </div>
+
+  <!-- Search and Filters -->
+  <div class="card card-custom mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-search"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Buscar por código o nombre..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearch()"
+            >
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <span class="badge bg-info fs-6">
+            Total de cuentas: {{filteredAccounts.length}}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Form -->
+  <div class="card card-custom mb-4" *ngIf="showForm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">
+        <i class="fas fa-edit me-2"></i>
+        {{isEditing ? 'Editar Cuenta' : 'Nueva Cuenta'}}
+      </h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="accountForm" (ngSubmit)="onSubmit()">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Código *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              formControlName="code"
+              placeholder="1000"
+              [class.is-invalid]="accountForm.get('code')?.invalid && accountForm.get('code')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="accountForm.get('code')?.errors && accountForm.get('code')?.touched">
+              <div *ngIf="accountForm.get('code')?.errors?.['required']">El código es requerido</div>
+              <div *ngIf="accountForm.get('code')?.errors?.['pattern']">Solo se permiten números</div>
+            </div>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label">Nombre *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              formControlName="name"
+              placeholder="Nombre de la cuenta"
+              [class.is-invalid]="accountForm.get('name')?.invalid && accountForm.get('name')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="accountForm.get('name')?.errors && accountForm.get('name')?.touched">
+              <div *ngIf="accountForm.get('name')?.errors?.['required']">El nombre es requerido</div>
+              <div *ngIf="accountForm.get('name')?.errors?.['minlength']">Mínimo 3 caracteres</div>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Tipo *</label>
+            <select 
+              class="form-select"
+              formControlName="type"
+              [class.is-invalid]="accountForm.get('type')?.invalid && accountForm.get('type')?.touched"
+            >
+              <option value="">Seleccionar</option>
+              <option *ngFor="let type of accountTypes" [value]="type">
+                {{getAccountTypeName(type)}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="accountForm.get('type')?.errors && accountForm.get('type')?.touched">
+              El tipo es requerido
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Estado</label>
+            <div class="form-check form-switch mt-2">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                formControlName="isActive"
+                id="isActive"
+              >
+              <label class="form-check-label" for="isActive">
+                Activa
+              </label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Categoría *</label>
+            <select 
+              class="form-select"
+              formControlName="category"
+              [class.is-invalid]="accountForm.get('category')?.invalid && accountForm.get('category')?.touched"
+            >
+              <option value="">Seleccionar categoría</option>
+              <option *ngFor="let category of accountCategories" [value]="category">
+                {{getCategoryName(category)}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="accountForm.get('category')?.errors && accountForm.get('category')?.touched">
+              La categoría es requerida
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Cuenta Padre (Opcional)</label>
+            <select class="form-select" formControlName="parentId">
+              <option value="">Sin cuenta padre</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{account.code}} - {{account.name}}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-success" [disabled]="accountForm.invalid">
+            <i class="fas fa-save me-2"></i>
+            {{isEditing ? 'Actualizar' : 'Guardar'}}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+            <i class="fas fa-times me-2"></i>Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Accounts Table -->
+  <div class="card card-custom">
+    <div class="card-header bg-light">
+      <h5 class="mb-0">
+        <i class="fas fa-table me-2"></i>Lista de Cuentas
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Categoría</th>
+              <th class="text-end">Saldo</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let account of filteredAccounts" [class]="!account.isActive ? 'table-secondary' : ''">
+              <td>
+                <code class="badge bg-primary">{{account.code}}</code>
+              </td>
+              <td>
+                <strong>{{account.name}}</strong>
+              </td>
+              <td>
+                <span class="badge bg-info">{{getAccountTypeName(account.type)}}</span>
+              </td>
+              <td>
+                <small class="text-muted">{{getCategoryName(account.category)}}</small>
+              </td>
+              <td class="text-end">
+                <strong [class]="account.balance >= 0 ? 'text-success' : 'text-danger'">
+                  {{formatCurrency(account.balance)}}
+                </strong>
+              </td>
+              <td class="text-center">
+                <span 
+                  class="badge"
+                  [class]="account.isActive ? 'bg-success' : 'bg-secondary'"
+                >
+                  {{account.isActive ? 'Activa' : 'Inactiva'}}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <button 
+                    class="btn btn-outline-primary" 
+                    (click)="editAccount(account)"
+                    title="Editar"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    class="btn btn-outline-warning" 
+                    (click)="toggleStatus(account.id)"
+                    [title]="account.isActive ? 'Desactivar' : 'Activar'"
+                  >
+                    <i class="fas" [class]="account.isActive ? 'fa-eye-slash' : 'fa-eye'"></i>
+                  </button>
+                  <button 
+                    class="btn btn-outline-danger" 
+                    (click)="deleteAccount(account.id)"
+                    title="Eliminar"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="filteredAccounts.length === 0" class="text-center py-5">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <p class="text-muted">No se encontraron cuentas</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Card -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card card-custom">
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-2">
+              <h5 class="text-primary"></h5>
+              <small class="text-muted">Activos</small>
+            </div>
+            <div class="col-md-2">
+              <h5 class="text-warning"></h5>
+              <small class="text-muted">Pasivos</small>
+            </div>
+            <div class="col-md-2">
+              <h5 class="text-info"></h5>
+              <small class="text-muted">Patrimonio</small>
+            </div>
+            <div class="col-md-2">
+              <h5 class="text-success"></h5>
+              <small class="text-muted">Ingresos</small>
+            </div>
+            <div class="col-md-2">
+              <h5 class="text-danger"></h5>
+              <small class="text-muted">Gastos</small>
+            </div>
+            <div class="col-md-2">
+              <h5 class="text-secondary"></h5>
+              <small class="text-muted">Inactivas</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>

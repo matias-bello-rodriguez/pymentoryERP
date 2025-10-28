@@ -1,0 +1,241 @@
+<div class="auth-container d-flex align-items-center justify-content-center py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7 col-md-9 col-sm-11">
+        <div class="card card-custom shadow-lg border-0">
+          <div class="card-body p-5">
+            <!-- Logo and Title -->
+            <div class="text-center mb-4">
+              <div class="mb-3">
+                <i class="fas fa-chart-pie fa-3x text-primary"></i>
+              </div>
+              <h2 class="card-title text-primary mb-2">Crear Cuenta</h2>
+              <p class="text-muted">Únete a PymentoryERP y gestiona tu negocio</p>
+            </div>
+
+            <!-- Registration Form -->
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+              <div class="row">
+                <!-- First Name -->
+                <div class="col-md-6 mb-3">
+                  <label for="firstName" class="form-label">
+                    <i class="fas fa-user me-2"></i>Nombre
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control"
+                    [class.is-invalid]="firstName?.invalid && firstName?.touched"
+                    [class.is-valid]="firstName?.valid && firstName?.touched"
+                    id="firstName"
+                    formControlName="firstName"
+                    placeholder="Tu nombre"
+                  >
+                  <div class="invalid-feedback" *ngIf="firstName?.touched && firstName?.errors">
+                    <div *ngIf="firstName?.errors?.['required']">El nombre es requerido</div>
+                    <div *ngIf="firstName?.errors?.['minlength']">Mínimo 2 caracteres</div>
+                  </div>
+                </div>
+
+                <!-- Last Name -->
+                <div class="col-md-6 mb-3">
+                  <label for="lastName" class="form-label">
+                    <i class="fas fa-user me-2"></i>Apellido
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control"
+                    [class.is-invalid]="lastName?.invalid && lastName?.touched"
+                    [class.is-valid]="lastName?.valid && lastName?.touched"
+                    id="lastName"
+                    formControlName="lastName"
+                    placeholder="Tu apellido"
+                  >
+                  <div class="invalid-feedback" *ngIf="lastName?.touched && lastName?.errors">
+                    <div *ngIf="lastName?.errors?.['required']">El apellido es requerido</div>
+                    <div *ngIf="lastName?.errors?.['minlength']">Mínimo 2 caracteres</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Email -->
+              <div class="mb-3">
+                <label for="email" class="form-label">
+                  <i class="fas fa-envelope me-2"></i>Correo Electrónico
+                </label>
+                <input 
+                  type="email" 
+                  class="form-control"
+                  [class.is-invalid]="email?.invalid && email?.touched"
+                  [class.is-valid]="email?.valid && email?.touched"
+                  id="email"
+                  formControlName="email"
+                  placeholder="tu@email.com"
+                >
+                <div class="invalid-feedback" *ngIf="email?.touched && email?.errors">
+                  <div *ngIf="email?.errors?.['required']">El correo electrónico es requerido</div>
+                  <div *ngIf="email?.errors?.['email']">Ingresa un correo electrónico válido</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <!-- Phone -->
+                <div class="col-md-6 mb-3">
+                  <label for="phone" class="form-label">
+                    <i class="fas fa-phone me-2"></i>Teléfono
+                  </label>
+                  <input 
+                    type="tel" 
+                    class="form-control"
+                    [class.is-invalid]="phone?.invalid && phone?.touched"
+                    [class.is-valid]="phone?.valid && phone?.touched"
+                    id="phone"
+                    formControlName="phone"
+                    placeholder="1234567890"
+                  >
+                  <div class="invalid-feedback" *ngIf="phone?.touched && phone?.errors">
+                    <div *ngIf="phone?.errors?.['required']">El teléfono es requerido</div>
+                    <div *ngIf="phone?.errors?.['pattern']">Ingresa un teléfono válido (10 dígitos)</div>
+                  </div>
+                </div>
+
+                <!-- Company -->
+                <div class="col-md-6 mb-3">
+                  <label for="company" class="form-label">
+                    <i class="fas fa-building me-2"></i>Empresa
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control"
+                    [class.is-invalid]="company?.invalid && company?.touched"
+                    [class.is-valid]="company?.valid && company?.touched"
+                    id="company"
+                    formControlName="company"
+                    placeholder="Nombre de tu empresa"
+                  >
+                  <div class="invalid-feedback" *ngIf="company?.touched && company?.errors">
+                    <div *ngIf="company?.errors?.['required']">El nombre de la empresa es requerido</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Password -->
+              <div class="mb-3">
+                <label for="password" class="form-label">
+                  <i class="fas fa-lock me-2"></i>Contraseña
+                </label>
+                <div class="input-group">
+                  <input 
+                    [type]="showPassword ? 'text' : 'password'"
+                    class="form-control"
+                    [class.is-invalid]="password?.invalid && password?.touched"
+                    [class.is-valid]="password?.valid && password?.touched"
+                    id="password"
+                    formControlName="password"
+                    placeholder="Tu contraseña"
+                  >
+                  <button 
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    (click)="togglePassword()"
+                  >
+                    <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+                  </button>
+                </div>
+                <div class="invalid-feedback" *ngIf="password?.touched && password?.errors">
+                  <div *ngIf="password?.errors?.['required']">La contraseña es requerida</div>
+                  <div *ngIf="password?.errors?.['minlength']">Mínimo 8 caracteres</div>
+                  <div *ngIf="password?.errors?.['passwordStrength']">
+                    Debe contener mayúsculas, minúsculas, números y símbolos
+                  </div>
+                </div>
+                <div class="form-text">
+                  <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos
+                  </small>
+                </div>
+              </div>
+
+              <!-- Confirm Password -->
+              <div class="mb-3">
+                <label for="confirmPassword" class="form-label">
+                  <i class="fas fa-lock me-2"></i>Confirmar Contraseña
+                </label>
+                <div class="input-group">
+                  <input 
+                    [type]="showConfirmPassword ? 'text' : 'password'"
+                    class="form-control"
+                    [class.is-invalid]="confirmPassword?.invalid && confirmPassword?.touched"
+                    [class.is-valid]="confirmPassword?.valid && confirmPassword?.touched"
+                    id="confirmPassword"
+                    formControlName="confirmPassword"
+                    placeholder="Confirma tu contraseña"
+                  >
+                  <button 
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    (click)="toggleConfirmPassword()"
+                  >
+                    <i class="fas" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i>
+                  </button>
+                </div>
+                <div class="invalid-feedback" *ngIf="confirmPassword?.touched && confirmPassword?.errors">
+                  <div *ngIf="confirmPassword?.errors?.['required']">Confirma tu contraseña</div>
+                  <div *ngIf="confirmPassword?.errors?.['passwordMismatch']">Las contraseñas no coinciden</div>
+                </div>
+              </div>
+
+              <!-- Terms and Conditions -->
+              <div class="mb-4">
+                <div class="form-check">
+                  <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    id="terms"
+                    formControlName="terms"
+                    [class.is-invalid]="terms?.invalid && terms?.touched"
+                  >
+                  <label class="form-check-label" for="terms">
+                    Acepto los <a href="#" class="text-primary">términos y condiciones</a> y la 
+                    <a href="#" class="text-primary">política de privacidad</a>
+                  </label>
+                  <div class="invalid-feedback" *ngIf="terms?.touched && terms?.errors">
+                    Debes aceptar los términos y condiciones
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="d-grid mb-3">
+                <button 
+                  type="submit" 
+                  class="btn btn-primary btn-lg btn-custom"
+                  [disabled]="isLoading"
+                >
+                  <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!isLoading" class="fas fa-user-plus me-2"></i>
+                  {{ isLoading ? 'Creando cuenta...' : 'Crear Cuenta' }}
+                </button>
+              </div>
+
+              <!-- Login Link -->
+              <div class="text-center">
+                <p class="mb-0 text-muted">
+                  ¿Ya tienes una cuenta? 
+                  <a routerLink="/login" class="text-primary text-decoration-none fw-bold">Inicia sesión aquí</a>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+          <p class="text-white-50 small">
+            © 2024 PymentoryERP. Todos los derechos reservados.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

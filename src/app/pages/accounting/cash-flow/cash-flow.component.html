@@ -1,0 +1,337 @@
+<div class="container-fluid main-container">
+  <!-- Header -->
+  <app-navbar></app-navbar>
+
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-exchange-alt text-primary me-2"></i>Flujo de Caja
+        </h2>
+        <p class="text-muted mb-0">Control de entradas y salidas de efectivo</p>
+      </div>
+      <button class="btn btn-primary btn-custom" (click)="showForm = !showForm">
+        <i class="fas fa-plus me-2"></i>Nuevo Movimiento
+      </button>
+    </div>
+
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card card-custom bg-success text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-arrow-up fa-2x mb-2"></i>
+          <h4>{{formatCurrency(totalInflows)}}</h4>
+          <p class="mb-0">Total Entradas</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-custom bg-danger text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-arrow-down fa-2x mb-2"></i>
+          <h4>{{formatCurrency(totalOutflows)}}</h4>
+          <p class="mb-0">Total Salidas</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-custom text-white" [class]="netCashFlow >= 0 ? 'bg-info' : 'bg-warning'">
+        <div class="card-body text-center">
+          <i class="fas fa-balance-scale fa-2x mb-2"></i>
+          <h4>{{formatCurrency(netCashFlow)}}</h4>
+          <p class="mb-0">Flujo Neto</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-custom bg-secondary text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-list fa-2x mb-2"></i>
+          <h4>{{filteredEntries.length}}</h4>
+          <p class="mb-0">Movimientos</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card card-custom mb-4">
+    <div class="card-header bg-light">
+      <h5 class="mb-0">
+        <i class="fas fa-filter me-2"></i>Filtros
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" [(ngModel)]="filterType" (change)="applyFilters()">
+            <option value="">Todos</option>
+            <option *ngFor="let type of cashFlowTypes" [value]="type">
+              {{getTypeName(type)}}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Categoría</label>
+          <select class="form-select" [(ngModel)]="filterCategory" (change)="applyFilters()">
+            <option value="">Todas</option>
+            <option *ngFor="let category of cashFlowCategories" [value]="category">
+              {{getCategoryName(category)}}
+            </option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fecha Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateFrom" (change)="applyFilters()">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Fecha Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateTo" (change)="applyFilters()">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button 
+            class="btn btn-outline-secondary w-100" 
+            (click)="filterType = ''; filterCategory = ''; filterDateFrom = ''; filterDateTo = ''; applyFilters()"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cash Flow Form -->
+  <div class="card card-custom mb-4" *ngIf="showForm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">
+        <i class="fas fa-edit me-2"></i>
+        {{isEditing ? 'Editar Movimiento' : 'Nuevo Movimiento'}}
+      </h5>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="cashFlowForm" (ngSubmit)="onSubmit()">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Fecha *</label>
+            <input 
+              type="date" 
+              class="form-control"
+              formControlName="date"
+              [class.is-invalid]="cashFlowForm.get('date')?.invalid && cashFlowForm.get('date')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="cashFlowForm.get('date')?.errors && cashFlowForm.get('date')?.touched">
+              La fecha es requerida
+            </div>
+          </div>
+
+          <div class="col-md-5">
+            <label class="form-label">Descripción *</label>
+            <input 
+              type="text" 
+              class="form-control"
+              formControlName="description"
+              placeholder="Descripción del movimiento"
+              [class.is-invalid]="cashFlowForm.get('description')?.invalid && cashFlowForm.get('description')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="cashFlowForm.get('description')?.errors && cashFlowForm.get('description')?.touched">
+              <div *ngIf="cashFlowForm.get('description')?.errors?.['required']">La descripción es requerida</div>
+              <div *ngIf="cashFlowForm.get('description')?.errors?.['minlength']">Mínimo 3 caracteres</div>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Tipo *</label>
+            <select 
+              class="form-select"
+              formControlName="type"
+              [class.is-invalid]="cashFlowForm.get('type')?.invalid && cashFlowForm.get('type')?.touched"
+            >
+              <option value="">Seleccionar</option>
+              <option *ngFor="let type of cashFlowTypes" [value]="type">
+                {{getTypeName(type)}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="cashFlowForm.get('type')?.errors && cashFlowForm.get('type')?.touched">
+              El tipo es requerido
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Monto *</label>
+            <input 
+              type="number" 
+              class="form-control"
+              formControlName="amount"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              [class.is-invalid]="cashFlowForm.get('amount')?.invalid && cashFlowForm.get('amount')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="cashFlowForm.get('amount')?.errors && cashFlowForm.get('amount')?.touched">
+              <div *ngIf="cashFlowForm.get('amount')?.errors?.['required']">El monto es requerido</div>
+              <div *ngIf="cashFlowForm.get('amount')?.errors?.['min']">El monto debe ser mayor a 0</div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Categoría *</label>
+            <select 
+              class="form-select"
+              formControlName="category"
+              [class.is-invalid]="cashFlowForm.get('category')?.invalid && cashFlowForm.get('category')?.touched"
+            >
+              <option value="">Seleccionar categoría</option>
+              <option *ngFor="let category of cashFlowCategories" [value]="category">
+                {{getCategoryName(category)}}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="cashFlowForm.get('category')?.errors && cashFlowForm.get('category')?.touched">
+              La categoría es requerida
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Referencia</label>
+            <input 
+              type="text" 
+              class="form-control"
+              formControlName="reference"
+              placeholder="Número de referencia"
+            >
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-success" [disabled]="cashFlowForm.invalid">
+            <i class="fas fa-save me-2"></i>
+            {{isEditing ? 'Actualizar' : 'Guardar'}}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+            <i class="fas fa-times me-2"></i>Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category Summary -->
+  <div class="card card-custom mb-4">
+    <div class="card-header bg-light">
+      <h5 class="mb-0">
+        <i class="fas fa-chart-pie me-2"></i>Resumen por Categoría
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row" *ngFor="let category of cashFlowCategories">
+        <div class="col-12 mb-3">
+          <h6>{{getCategoryName(category)}}</h6>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between">
+                <span class="text-success">Entradas:</span>
+                <strong class="text-success">{{formatCurrency(getCashFlowByCategory()[category].inflow)}}</strong>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between">
+                <span class="text-danger">Salidas:</span>
+                <strong class="text-danger">{{formatCurrency(getCashFlowByCategory()[category].outflow)}}</strong>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between">
+                <span class="text-info">Neto:</span>
+                <strong [class]="getCashFlowByCategory()[category].inflow - getCashFlowByCategory()[category].outflow >= 0 ? 'text-info' : 'text-warning'">
+                  {{formatCurrency(getCashFlowByCategory()[category].inflow - getCashFlowByCategory()[category].outflow)}}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movements Table -->
+  <div class="card card-custom">
+    <div class="card-header bg-light">
+      <h5 class="mb-0">
+        <i class="fas fa-table me-2"></i>Movimientos de Efectivo
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Fecha</th>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th>Tipo</th>
+              <th class="text-end">Monto</th>
+              <th>Referencia</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let entry of filteredEntries">
+              <td>
+                <small>{{formatDate(entry.date)}}</small>
+              </td>
+              <td>
+                <strong>{{entry.description}}</strong>
+              </td>
+              <td>
+                <span class="badge bg-secondary">{{getCategoryName(entry.category)}}</span>
+              </td>
+              <td>
+                <span 
+                  class="badge"
+                  [class]="entry.type === 'INFLOW' ? 'bg-success' : 'bg-danger'"
+                >
+                  <i class="fas" [class]="entry.type === 'INFLOW' ? 'fa-arrow-up' : 'fa-arrow-down'"></i>
+                  {{getTypeName(entry.type)}}
+                </span>
+              </td>
+              <td class="text-end">
+                <strong [class]="entry.type === 'INFLOW' ? 'text-success' : 'text-danger'">
+                  {{formatCurrency(entry.amount)}}
+                </strong>
+              </td>
+              <td>
+                <code class="small">{{entry.reference}}</code>
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                  <button 
+                    class="btn btn-outline-primary" 
+                    (click)="editEntry(entry)"
+                    title="Editar"
+                  >
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    class="btn btn-outline-danger" 
+                    (click)="deleteEntry(entry.id)"
+                    title="Eliminar"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="filteredEntries.length === 0" class="text-center py-5">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <p class="text-muted">No se encontraron movimientos</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
