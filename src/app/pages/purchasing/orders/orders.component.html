@@ -1,92 +1,78 @@
 <div class="container-fluid main-container">
   <app-navbar></app-navbar>
 
-  <div class="container-fluid mt-4">
-    <!-- Header -->
-    <div class="row">
-      <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <h2 class="text-primary mb-1">
-              <i class="fas fa-file-invoice me-2"></i>Órdenes de Compra
-            </h2>
-            <p class="text-muted mb-0">Gestiona las órdenes de compra a proveedores</p>
-          </div>
-          <button class="btn btn-primary" (click)="showNewOrderForm()">
-            <i class="fas fa-plus me-2"></i>Nueva Orden
-          </button>
-        </div>
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-file-invoice text-primary me-2"></i>Órdenes de Compra
+        </h2>
+        <p class="text-muted mb-0">Gestiona las órdenes de compra a proveedores</p>
       </div>
+      <button class="btn btn-primary btn-custom" (click)="showNewOrderForm()">
+        <i class="fas fa-plus me-2"></i>Nueva Orden
+      </button>
     </div>
 
     <!-- Statistics Cards -->
+    <!-- Summary Cards -->
     <div class="row mb-4">
-      <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm">
+      <div class="col-md-3">
+        <div class="card card-custom bg-primary text-white">
           <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
-                  <i class="fas fa-file-invoice fa-lg"></i>
-                </div>
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{totalOrders}}</h4>
+                <p class="mb-0">Total Órdenes</p>
               </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0">Total Órdenes</h6>
-                <h4 class="mb-0 text-primary">{{totalOrders}}</h4>
+              <div class="align-self-center">
+                <i class="fas fa-file-invoice fa-2x"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm">
+      <div class="col-md-3">
+        <div class="card card-custom bg-warning text-white">
           <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
-                  <i class="fas fa-clock fa-lg"></i>
-                </div>
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{pendingOrders}}</h4>
+                <p class="mb-0">Pendientes</p>
               </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0">Pendientes</h6>
-                <h4 class="mb-0 text-warning">{{pendingOrders}}</h4>
+              <div class="align-self-center">
+                <i class="fas fa-clock fa-2x"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm">
+      <div class="col-md-3">
+        <div class="card card-custom bg-success text-white">
           <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
-                  <i class="fas fa-check-circle fa-lg"></i>
-                </div>
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{approvedOrders}}</h4>
+                <p class="mb-0">Aprobadas</p>
               </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0">Aprobadas</h6>
-                <h4 class="mb-0 text-success">{{approvedOrders}}</h4>
+              <div class="align-self-center">
+                <i class="fas fa-check-circle fa-2x"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <div class="col-xl-3 col-md-6 mb-3">
-        <div class="card border-0 shadow-sm">
+      <div class="col-md-3">
+        <div class="card card-custom bg-info text-white">
           <div class="card-body">
-            <div class="d-flex align-items-center">
-              <div class="flex-shrink-0">
-                <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
-                  <i class="fas fa-euro-sign fa-lg"></i>
-                </div>
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{totalValue | currency:'EUR':'symbol':'1.2-2'}}</h4>
+                <p class="mb-0">Valor Total</p>
               </div>
-              <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0">Valor Total</h6>
-                <h4 class="mb-0 text-info">{{totalValue | currency:'EUR':'symbol':'1.2-2'}}</h4>
+              <div class="align-self-center">
+                <i class="fas fa-euro-sign fa-2x"></i>
               </div>
             </div>
           </div>
@@ -97,7 +83,7 @@
     <!-- Filters -->
     <div class="row mb-4">
       <div class="col-12">
-        <div class="card">
+        <div class="card card-custom">
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-3">
@@ -164,10 +150,10 @@
     <!-- Orders List -->
     <div class="row" *ngIf="!showForm">
       <div class="col-12">
-        <div class="card">
+        <div class="card card-custom">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Lista de Órdenes</h5>
-            <button class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
+            <button class="btn btn-outline-success btn-sm btn-custom" (click)="exportToExcel()">
               <i class="fas fa-download me-1"></i>Exportar
             </button>
           </div>
@@ -250,7 +236,7 @@
     <!-- Order Form -->
     <div class="row" *ngIf="showForm">
       <div class="col-12">
-        <div class="card">
+        <div class="card card-custom">
           <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
               <h5 class="mb-0">
@@ -486,7 +472,7 @@
                     <button type="button" class="btn btn-secondary" (click)="cancelForm()">
                       <i class="fas fa-times me-2"></i>Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary" [disabled]="orderForm.invalid">
+                    <button type="submit" class="btn btn-primary btn-custom" [disabled]="orderForm.invalid">
                       <i class="fas fa-save me-2"></i>
                       {{editingOrder ? 'Actualizar' : 'Crear'}} Orden
                     </button>

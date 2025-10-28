@@ -432,20 +432,116 @@ export class BanksComponent implements OnInit {
     });
   }
 
-  editMovement(movement: BankMovement) {
-    this.isEditingMovement = true;
-    this.editingMovementId = movement.id;
-    this.showMovementForm = true;
-    
-    this.movementForm.patchValue({
-      bankAccountId: movement.bankAccountId,
-      date: movement.date.toISOString().split('T')[0],
-      description: movement.description,
-      reference: movement.reference,
-      type: movement.type,
-      amount: movement.amount,
-      isReconciled: movement.isReconciled
+  async editMovement(movement: BankMovement) {
+    const bankAccountOptions = this.bankAccounts.map(account => 
+      `<option value="${account.id}" ${account.id === movement.bankAccountId ? 'selected' : ''}>${account.bankName} - ${account.accountNumber}</option>`
+    ).join('');
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Editar Movimiento Bancario',
+      html: `
+        <div class="mb-3">
+          <label for="bankAccountId" class="form-label">Cuenta Bancaria</label>
+          <select id="bankAccountId" class="form-select" required>
+            <option value="">Seleccionar cuenta</option>
+            ${bankAccountOptions}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="type" class="form-label">Tipo de Movimiento</label>
+          <select id="type" class="form-select" required>
+            <option value="">Seleccionar tipo</option>
+            <option value="DEPOSIT" ${movement.type === 'DEPOSIT' ? 'selected' : ''}>Depósito</option>
+            <option value="WITHDRAWAL" ${movement.type === 'WITHDRAWAL' ? 'selected' : ''}>Retiro</option>
+            <option value="TRANSFER_IN" ${movement.type === 'TRANSFER_IN' ? 'selected' : ''}>Transferencia Entrante</option>
+            <option value="TRANSFER_OUT" ${movement.type === 'TRANSFER_OUT' ? 'selected' : ''}>Transferencia Saliente</option>
+            <option value="INTEREST" ${movement.type === 'INTEREST' ? 'selected' : ''}>Interés</option>
+            <option value="FEE" ${movement.type === 'FEE' ? 'selected' : ''}>Comisión</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="amount" class="form-label">Monto</label>
+          <input id="amount" type="number" step="0.01" min="0" class="form-control" value="${movement.amount}" required>
+        </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">Descripción</label>
+          <input id="description" type="text" class="form-control" value="${movement.description}" required>
+        </div>
+        <div class="mb-3">
+          <label for="reference" class="form-label">Referencia</label>
+          <input id="reference" type="text" class="form-control" value="${movement.reference || ''}">
+        </div>
+        <div class="mb-3">
+          <label for="date" class="form-label">Fecha</label>
+          <input id="date" type="date" class="form-control" value="${movement.date.toISOString().split('T')[0]}" required>
+        </div>
+        <div class="form-check">
+          <input id="isReconciled" type="checkbox" class="form-check-input" ${movement.isReconciled ? 'checked' : ''}>
+          <label for="isReconciled" class="form-check-label">Conciliado</label>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Actualizar Movimiento',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-primary me-2',
+        cancelButton: 'btn btn-secondary'
+      },
+      buttonsStyling: false,
+      preConfirm: () => {
+        const bankAccountId = (document.getElementById('bankAccountId') as HTMLSelectElement).value;
+        const type = (document.getElementById('type') as HTMLSelectElement).value;
+        const amount = (document.getElementById('amount') as HTMLInputElement).value;
+        const description = (document.getElementById('description') as HTMLInputElement).value;
+        const reference = (document.getElementById('reference') as HTMLInputElement).value;
+        const date = (document.getElementById('date') as HTMLInputElement).value;
+        const isReconciled = (document.getElementById('isReconciled') as HTMLInputElement).checked;
+
+        if (!bankAccountId) {
+          Swal.showValidationMessage('Debe seleccionar una cuenta bancaria');
+          return false;
+        }
+        if (!type) {
+          Swal.showValidationMessage('Debe seleccionar un tipo de movimiento');
+          return false;
+        }
+        if (!amount || parseFloat(amount) <= 0) {
+          Swal.showValidationMessage('El monto debe ser mayor a 0');
+          return false;
+        }
+        if (!description || description.trim().length < 3) {
+          Swal.showValidationMessage('La descripción debe tener al menos 3 caracteres');
+          return false;
+        }
+        if (!date) {
+          Swal.showValidationMessage('Debe seleccionar una fecha');
+          return false;
+        }
+
+        return {
+          bankAccountId,
+          type,
+          amount,
+          description: description.trim(),
+          reference: reference.trim(),
+          date,
+          isReconciled
+        };
+      }
     });
+
+    if (formValues) {
+      this.updateMovement(movement.id, formValues);
+      
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Movimiento bancario actualizado correctamente',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
   }
 
   deleteBankAccount(id: string) {
@@ -635,10 +731,50 @@ export class BanksComponent implements OnInit {
     });
   }
 
-  deleteMovement(id: string) {
-    if (confirm('¿Está seguro de eliminar este movimiento?')) {
+  async deleteMovement(id: string) {
+    const movement = this.bankMovements.find(mov => mov.id === id);
+    if (!movement) return;
+
+    const bankAccount = this.bankAccounts.find(acc => acc.id === movement.bankAccountId);
+    const accountName = bankAccount ? `${bankAccount.bankName} - ${bankAccount.accountNumber}` : 'Cuenta desconocida';
+
+    const result = await Swal.fire({
+      title: '¿Eliminar Movimiento?',
+      html: `
+        <div class="text-start">
+          <p><strong>Cuenta:</strong> ${accountName}</p>
+          <p><strong>Descripción:</strong> ${movement.description}</p>
+          <p><strong>Monto:</strong> ${this.formatCurrency(movement.amount)}</p>
+          <p><strong>Fecha:</strong> ${movement.date.toLocaleDateString()}</p>
+          <p><strong>Tipo:</strong> ${this.getMovementTypeLabel(movement.type)}</p>
+        </div>
+        <div class="alert alert-warning mt-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Advertencia:</strong> Esta acción no se puede deshacer.
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-danger me-2',
+        cancelButton: 'btn btn-secondary'
+      },
+      buttonsStyling: false
+    });
+
+    if (result.isConfirmed) {
       this.bankMovements = this.bankMovements.filter(mov => mov.id !== id);
       this.applyMovementFilters();
+      
+      Swal.fire({
+        title: '¡Eliminado!',
+        text: 'El movimiento ha sido eliminado correctamente',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
     }
   }
 
@@ -830,6 +966,18 @@ export class BanksComponent implements OnInit {
       style: 'currency',
       currency: 'COP'
     }).format(amount);
+  }
+
+  getMovementTypeLabel(type: MovementType): string {
+    const labels = {
+      [MovementType.DEPOSIT]: 'Depósito',
+      [MovementType.WITHDRAWAL]: 'Retiro',
+      [MovementType.TRANSFER_IN]: 'Transferencia Entrante',
+      [MovementType.TRANSFER_OUT]: 'Transferencia Saliente',
+      [MovementType.INTEREST]: 'Interés',
+      [MovementType.FEE]: 'Comisión'
+    };
+    return labels[type] || type;
   }
 
   formatDate(date: Date): string {

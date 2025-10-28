@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { Product, ProductStatus, ProductCategory, UnitOfMeasure, InventoryAlert, StockMovement } from '../../../models/inventory.models';
 import { NavbarComponent } from '../../../components/shared/navbar/navbar.component';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-products',
@@ -296,18 +297,380 @@ export class ProductsComponent implements OnInit {
     }
   }
 
-  editProduct(product: Product) {
-    this.editingProduct = product;
-    this.productForm.patchValue(product);
-    this.showForm = true;
+  async showNewProductModal() {
+    const categoryOptions = Object.values(ProductCategory).map(cat => 
+      `<option value="${cat}">${this.getCategoryLabel(cat)}</option>`
+    ).join('');
+
+    const unitOptions = Object.values(UnitOfMeasure).map(unit => 
+      `<option value="${unit}">${this.getUnitLabel(unit)}</option>`
+    ).join('');
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Nuevo Producto',
+      html: `
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="code" class="form-label">Código</label>
+            <input id="code" type="text" class="form-control" placeholder="Código del producto" required>
+          </div>
+          <div class="col-md-6">
+            <label for="name" class="form-label">Nombre</label>
+            <input id="name" type="text" class="form-control" placeholder="Nombre del producto" required>
+          </div>
+          <div class="col-12">
+            <label for="description" class="form-label">Descripción</label>
+            <textarea id="description" class="form-control" rows="2" placeholder="Descripción del producto"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label for="category" class="form-label">Categoría</label>
+            <select id="category" class="form-select" required>
+              <option value="">Seleccionar categoría</option>
+              ${categoryOptions}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="unitOfMeasure" class="form-label">Unidad de Medida</label>
+            <select id="unitOfMeasure" class="form-select" required>
+              <option value="">Seleccionar unidad</option>
+              ${unitOptions}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="unitCost" class="form-label">Costo Unitario</label>
+            <input id="unitCost" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" required>
+          </div>
+          <div class="col-md-6">
+            <label for="unitPrice" class="form-label">Precio Unitario</label>
+            <input id="unitPrice" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" required>
+          </div>
+          <div class="col-md-4">
+            <label for="currentStock" class="form-label">Stock Inicial</label>
+            <input id="currentStock" type="number" min="0" class="form-control" value="0" required>
+          </div>
+          <div class="col-md-4">
+            <label for="minStock" class="form-label">Stock Mínimo</label>
+            <input id="minStock" type="number" min="0" class="form-control" value="0" required>
+          </div>
+          <div class="col-md-4">
+            <label for="maxStock" class="form-label">Stock Máximo</label>
+            <input id="maxStock" type="number" min="0" class="form-control" value="100" required>
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Crear Producto',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-primary me-2',
+        cancelButton: 'btn btn-secondary'
+      },
+      buttonsStyling: false,
+      preConfirm: () => {
+        const code = (document.getElementById('code') as HTMLInputElement).value;
+        const name = (document.getElementById('name') as HTMLInputElement).value;
+        const description = (document.getElementById('description') as HTMLTextAreaElement).value;
+        const category = (document.getElementById('category') as HTMLSelectElement).value;
+        const unitOfMeasure = (document.getElementById('unitOfMeasure') as HTMLSelectElement).value;
+        const unitCost = (document.getElementById('unitCost') as HTMLInputElement).value;
+        const unitPrice = (document.getElementById('unitPrice') as HTMLInputElement).value;
+        const currentStock = (document.getElementById('currentStock') as HTMLInputElement).value;
+        const minStock = (document.getElementById('minStock') as HTMLInputElement).value;
+        const maxStock = (document.getElementById('maxStock') as HTMLInputElement).value;
+
+        if (!code || code.trim().length < 3) {
+          Swal.showValidationMessage('El código debe tener al menos 3 caracteres');
+          return false;
+        }
+        if (!name || name.trim().length < 2) {
+          Swal.showValidationMessage('El nombre debe tener al menos 2 caracteres');
+          return false;
+        }
+        if (this.products.some(p => p.code === code.trim())) {
+          Swal.showValidationMessage('Ya existe un producto con este código');
+          return false;
+        }
+        if (!category) {
+          Swal.showValidationMessage('Debe seleccionar una categoría');
+          return false;
+        }
+        if (!unitOfMeasure) {
+          Swal.showValidationMessage('Debe seleccionar una unidad de medida');
+          return false;
+        }
+        if (!unitCost || parseFloat(unitCost) < 0) {
+          Swal.showValidationMessage('El costo unitario debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!unitPrice || parseFloat(unitPrice) < 0) {
+          Swal.showValidationMessage('El precio unitario debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!currentStock || parseFloat(currentStock) < 0) {
+          Swal.showValidationMessage('El stock inicial debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!minStock || parseFloat(minStock) < 0) {
+          Swal.showValidationMessage('El stock mínimo debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!maxStock || parseFloat(maxStock) < parseFloat(minStock)) {
+          Swal.showValidationMessage('El stock máximo debe ser mayor al stock mínimo');
+          return false;
+        }
+
+        return {
+          code: code.trim(),
+          name: name.trim(),
+          description: description.trim(),
+          category,
+          unitOfMeasure,
+          unitCost: parseFloat(unitCost),
+          unitPrice: parseFloat(unitPrice),
+          currentStock: parseInt(currentStock),
+          minStock: parseInt(minStock),
+          maxStock: parseInt(maxStock),
+          status: ProductStatus.ACTIVE
+        };
+      }
+    });
+
+    if (formValues) {
+      const newProduct: Product = {
+        id: Date.now().toString(),
+        ...formValues,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      this.products.push(newProduct);
+      this.applyFilters();
+      this.calculateStats();
+      this.generateAlerts();
+      
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Producto creado correctamente',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
   }
 
-  deleteProduct(product: Product) {
-    if (confirm(`¿Estás seguro de eliminar el producto "${product.name}"?`)) {
+  async editProduct(product: Product) {
+    const categoryOptions = Object.values(ProductCategory).map(cat => 
+      `<option value="${cat}" ${product.category === cat ? 'selected' : ''}>${this.getCategoryLabel(cat)}</option>`
+    ).join('');
+
+    const unitOptions = Object.values(UnitOfMeasure).map(unit => 
+      `<option value="${unit}" ${product.unitOfMeasure === unit ? 'selected' : ''}>${this.getUnitLabel(unit)}</option>`
+    ).join('');
+
+    const statusOptions = Object.values(ProductStatus).map(status => 
+      `<option value="${status}" ${product.status === status ? 'selected' : ''}>${this.getStatusLabel(status)}</option>`
+    ).join('');
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Editar Producto',
+      html: `
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="code" class="form-label">Código</label>
+            <input id="code" type="text" class="form-control" value="${product.code}" required>
+          </div>
+          <div class="col-md-6">
+            <label for="name" class="form-label">Nombre</label>
+            <input id="name" type="text" class="form-control" value="${product.name}" required>
+          </div>
+          <div class="col-12">
+            <label for="description" class="form-label">Descripción</label>
+            <textarea id="description" class="form-control" rows="2">${product.description || ''}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label for="category" class="form-label">Categoría</label>
+            <select id="category" class="form-select" required>
+              ${categoryOptions}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="unitOfMeasure" class="form-label">Unidad de Medida</label>
+            <select id="unitOfMeasure" class="form-select" required>
+              ${unitOptions}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="unitCost" class="form-label">Costo Unitario</label>
+            <input id="unitCost" type="number" step="0.01" min="0" class="form-control" value="${product.unitCost}" required>
+          </div>
+          <div class="col-md-6">
+            <label for="unitPrice" class="form-label">Precio Unitario</label>
+            <input id="unitPrice" type="number" step="0.01" min="0" class="form-control" value="${product.unitPrice}" required>
+          </div>
+          <div class="col-md-4">
+            <label for="currentStock" class="form-label">Stock Actual</label>
+            <input id="currentStock" type="number" min="0" class="form-control" value="${product.currentStock}" required>
+          </div>
+          <div class="col-md-4">
+            <label for="minStock" class="form-label">Stock Mínimo</label>
+            <input id="minStock" type="number" min="0" class="form-control" value="${product.minStock}" required>
+          </div>
+          <div class="col-md-4">
+            <label for="maxStock" class="form-label">Stock Máximo</label>
+            <input id="maxStock" type="number" min="0" class="form-control" value="${product.maxStock}" required>
+          </div>
+          <div class="col-12">
+            <label for="status" class="form-label">Estado</label>
+            <select id="status" class="form-select" required>
+              ${statusOptions}
+            </select>
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Actualizar Producto',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-primary me-2',
+        cancelButton: 'btn btn-secondary'
+      },
+      buttonsStyling: false,
+      preConfirm: () => {
+        const code = (document.getElementById('code') as HTMLInputElement).value;
+        const name = (document.getElementById('name') as HTMLInputElement).value;
+        const description = (document.getElementById('description') as HTMLTextAreaElement).value;
+        const category = (document.getElementById('category') as HTMLSelectElement).value;
+        const unitOfMeasure = (document.getElementById('unitOfMeasure') as HTMLSelectElement).value;
+        const unitCost = (document.getElementById('unitCost') as HTMLInputElement).value;
+        const unitPrice = (document.getElementById('unitPrice') as HTMLInputElement).value;
+        const currentStock = (document.getElementById('currentStock') as HTMLInputElement).value;
+        const minStock = (document.getElementById('minStock') as HTMLInputElement).value;
+        const maxStock = (document.getElementById('maxStock') as HTMLInputElement).value;
+        const status = (document.getElementById('status') as HTMLSelectElement).value;
+
+        if (!code || code.trim().length < 3) {
+          Swal.showValidationMessage('El código debe tener al menos 3 caracteres');
+          return false;
+        }
+        if (!name || name.trim().length < 2) {
+          Swal.showValidationMessage('El nombre debe tener al menos 2 caracteres');
+          return false;
+        }
+        if (this.products.some(p => p.code === code.trim() && p.id !== product.id)) {
+          Swal.showValidationMessage('Ya existe un producto con este código');
+          return false;
+        }
+        if (!category) {
+          Swal.showValidationMessage('Debe seleccionar una categoría');
+          return false;
+        }
+        if (!unitOfMeasure) {
+          Swal.showValidationMessage('Debe seleccionar una unidad de medida');
+          return false;
+        }
+        if (!unitCost || parseFloat(unitCost) < 0) {
+          Swal.showValidationMessage('El costo unitario debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!unitPrice || parseFloat(unitPrice) < 0) {
+          Swal.showValidationMessage('El precio unitario debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!currentStock || parseFloat(currentStock) < 0) {
+          Swal.showValidationMessage('El stock actual debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!minStock || parseFloat(minStock) < 0) {
+          Swal.showValidationMessage('El stock mínimo debe ser mayor o igual a 0');
+          return false;
+        }
+        if (!maxStock || parseFloat(maxStock) < parseFloat(minStock)) {
+          Swal.showValidationMessage('El stock máximo debe ser mayor al stock mínimo');
+          return false;
+        }
+
+        return {
+          code: code.trim(),
+          name: name.trim(),
+          description: description.trim(),
+          category,
+          unitOfMeasure,
+          unitCost: parseFloat(unitCost),
+          unitPrice: parseFloat(unitPrice),
+          currentStock: parseInt(currentStock),
+          minStock: parseInt(minStock),
+          maxStock: parseInt(maxStock),
+          status
+        };
+      }
+    });
+
+    if (formValues) {
+      const index = this.products.findIndex(p => p.id === product.id);
+      if (index !== -1) {
+        this.products[index] = {
+          ...product,
+          ...formValues,
+          updatedAt: new Date()
+        };
+        
+        this.applyFilters();
+        this.calculateStats();
+        this.generateAlerts();
+        
+        Swal.fire({
+          title: '¡Éxito!',
+          text: 'Producto actualizado correctamente',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    }
+  }
+
+  async deleteProduct(product: Product) {
+    const result = await Swal.fire({
+      title: '¿Eliminar Producto?',
+      html: `
+        <div class="text-start">
+          <p><strong>Código:</strong> ${product.code}</p>
+          <p><strong>Nombre:</strong> ${product.name}</p>
+          <p><strong>Categoría:</strong> ${this.getCategoryLabel(product.category)}</p>
+          <p><strong>Stock Actual:</strong> ${product.currentStock} ${this.getUnitLabel(product.unitOfMeasure)}</p>
+          <p><strong>Precio:</strong> ${this.formatCurrency(product.unitPrice)}</p>
+        </div>
+        <div class="alert alert-warning mt-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Advertencia:</strong> Esta acción no se puede deshacer.
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-danger me-2',
+        cancelButton: 'btn btn-secondary'
+      },
+      buttonsStyling: false
+    });
+
+    if (result.isConfirmed) {
       this.products = this.products.filter(p => p.id !== product.id);
       this.applyFilters();
       this.calculateStats();
       this.generateAlerts();
+      
+      Swal.fire({
+        title: '¡Eliminado!',
+        text: 'El producto ha sido eliminado correctamente',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
     }
   }
 
@@ -332,6 +695,49 @@ export class ProductsComponent implements OnInit {
     return 'Normal';
   }
 
+  getCategoryLabel(category: ProductCategory): string {
+    const labels: Record<ProductCategory, string> = {
+      [ProductCategory.ELECTRONICS]: 'Electrónicos',
+      [ProductCategory.CLOTHING]: 'Ropa',
+      [ProductCategory.FOOD]: 'Alimentos',
+      [ProductCategory.BOOKS]: 'Libros',
+      [ProductCategory.HOME]: 'Hogar',
+      [ProductCategory.TOOLS]: 'Herramientas',
+      [ProductCategory.HEALTH]: 'Salud',
+      [ProductCategory.SPORTS]: 'Deportes',
+      [ProductCategory.OTHER]: 'Otros'
+    };
+    return labels[category] || category;
+  }
+
+  getUnitLabel(unit: UnitOfMeasure): string {
+    const labels: Record<UnitOfMeasure, string> = {
+      [UnitOfMeasure.UNIT]: 'Unidad',
+      [UnitOfMeasure.KG]: 'Kg',
+      [UnitOfMeasure.LITER]: 'Litro',
+      [UnitOfMeasure.METER]: 'Metro',
+      [UnitOfMeasure.BOX]: 'Caja',
+      [UnitOfMeasure.PACK]: 'Paquete'
+    };
+    return labels[unit] || unit;
+  }
+
+  getStatusLabel(status: ProductStatus): string {
+    const labels: Record<ProductStatus, string> = {
+      [ProductStatus.ACTIVE]: 'Activo',
+      [ProductStatus.INACTIVE]: 'Inactivo',
+      [ProductStatus.DISCONTINUED]: 'Descontinuado'
+    };
+    return labels[status] || status;
+  }
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP'
+    }).format(amount);
+  }
+
   getCategoryIcon(category: ProductCategory): string {
     const icons = {
       [ProductCategory.ELECTRONICS]: 'fas fa-laptop',
@@ -345,13 +751,6 @@ export class ProductsComponent implements OnInit {
       [ProductCategory.OTHER]: 'fas fa-box'
     };
     return icons[category] || 'fas fa-box';
-  }
-
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
   }
 
   acknowledgeAlert(alert: InventoryAlert) {
