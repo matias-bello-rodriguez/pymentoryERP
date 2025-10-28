@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { BankAccount, BankMovement, BankAccountType, MovementType } from '../../../models/accounting.models';
 import { NavbarComponent } from '../../../components/shared/navbar/navbar.component';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-banks',
@@ -292,18 +293,142 @@ export class BanksComponent implements OnInit {
   }
 
   editBankAccount(account: BankAccount) {
-    this.isEditingBank = true;
-    this.editingBankId = account.id;
-    this.showBankForm = true;
-    
-    this.bankForm.patchValue({
-      bankName: account.bankName,
-      accountName: account.accountName,
-      accountNumber: account.accountNumber,
-      accountType: account.accountType,
-      currency: account.currency,
-      balance: account.balance,
-      isActive: account.isActive
+    Swal.fire({
+      title: 'Editar Cuenta Bancaria',
+      html: `
+        <form id="editBankForm">
+          <div class="mb-3 text-start">
+            <label for="editBankName" class="form-label">Banco *</label>
+            <input type="text" id="editBankName" class="form-control" value="${account.bankName}" required minlength="3">
+          </div>
+          <div class="mb-3 text-start">
+            <label for="editAccountName" class="form-label">Nombre de la Cuenta *</label>
+            <input type="text" id="editAccountName" class="form-control" value="${account.accountName}" required minlength="3">
+          </div>
+          <div class="mb-3 text-start">
+            <label for="editAccountNumber" class="form-label">Número de Cuenta *</label>
+            <input type="text" id="editAccountNumber" class="form-control" value="${account.accountNumber}" required pattern="^[0-9-]+$">
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label for="editAccountType" class="form-label">Tipo de Cuenta *</label>
+              <select id="editAccountType" class="form-select" required>
+                <option value="">Selecciona un tipo</option>
+                ${this.bankAccountTypes.map(type => 
+                  `<option value="${type}" ${account.accountType === type ? 'selected' : ''}>${this.getBankAccountTypeName(type)}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="editCurrency" class="form-label">Moneda *</label>
+              <select id="editCurrency" class="form-select" required>
+                <option value="COP" ${account.currency === 'COP' ? 'selected' : ''}>COP - Peso Colombiano</option>
+                <option value="USD" ${account.currency === 'USD' ? 'selected' : ''}>USD - Dólar Americano</option>
+                <option value="EUR" ${account.currency === 'EUR' ? 'selected' : ''}>EUR - Euro</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3 text-start">
+            <label for="editBalance" class="form-label">Saldo Actual *</label>
+            <input type="number" id="editBalance" class="form-control" value="${account.balance}" required step="0.01">
+          </div>
+          <div class="mb-3 text-start">
+            <div class="form-check">
+              <input type="checkbox" id="editIsActive" class="form-check-input" ${account.isActive ? 'checked' : ''}>
+              <label for="editIsActive" class="form-check-label">Cuenta activa</label>
+            </div>
+          </div>
+        </form>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonColor: '#0dcaf0',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Actualizar Cuenta',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'swal-popup',
+        title: 'swal-title'
+      },
+      preConfirm: () => {
+        const bankName = (document.getElementById('editBankName') as HTMLInputElement).value;
+        const accountName = (document.getElementById('editAccountName') as HTMLInputElement).value;
+        const accountNumber = (document.getElementById('editAccountNumber') as HTMLInputElement).value;
+        const accountType = (document.getElementById('editAccountType') as HTMLSelectElement).value;
+        const currency = (document.getElementById('editCurrency') as HTMLSelectElement).value;
+        const balance = (document.getElementById('editBalance') as HTMLInputElement).value;
+        const isActive = (document.getElementById('editIsActive') as HTMLInputElement).checked;
+
+        if (!bankName || !accountName || !accountNumber || !accountType || !currency || !balance) {
+          Swal.showValidationMessage('Por favor completa todos los campos obligatorios');
+          return false;
+        }
+
+        if (bankName.length < 3 || accountName.length < 3) {
+          Swal.showValidationMessage('El nombre del banco y de la cuenta deben tener al menos 3 caracteres');
+          return false;
+        }
+
+        if (!/^[0-9-]+$/.test(accountNumber)) {
+          Swal.showValidationMessage('El número de cuenta solo puede contener números y guiones');
+          return false;
+        }
+
+        // Verificar si el número de cuenta ya existe (excluyendo la cuenta actual)
+        const existingAccount = this.bankAccounts.find(acc => acc.accountNumber === accountNumber && acc.id !== account.id);
+        if (existingAccount) {
+          Swal.showValidationMessage('Ya existe una cuenta con este número');
+          return false;
+        }
+
+        return {
+          bankName: bankName,
+          accountName: accountName,
+          accountNumber: accountNumber,
+          accountType: accountType as BankAccountType,
+          currency: currency,
+          balance: parseFloat(balance),
+          isActive: isActive
+        };
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const { bankName, accountName, accountNumber, accountType, currency, balance, isActive } = result.value;
+        
+        // Actualizar la cuenta
+        const index = this.bankAccounts.findIndex(acc => acc.id === account.id);
+        if (index !== -1) {
+          this.bankAccounts[index] = {
+            ...this.bankAccounts[index],
+            bankName: bankName,
+            accountName: accountName,
+            accountNumber: accountNumber,
+            accountType: accountType,
+            currency: currency,
+            balance: balance,
+            isActive: isActive,
+            updatedAt: new Date()
+          };
+          
+          Swal.fire({
+            title: '¡Cuenta Actualizada!',
+            html: `
+              <div class="text-start">
+                <p><strong>Banco:</strong> ${bankName}</p>
+                <p><strong>Cuenta:</strong> ${accountName}</p>
+                <p><strong>Número:</strong> ${accountNumber}</p>
+                <p><strong>Tipo:</strong> ${this.getBankAccountTypeName(accountType)}</p>
+                <p><strong>Moneda:</strong> ${currency}</p>
+                <p><strong>Saldo:</strong> ${this.formatCurrency(balance)}</p>
+                <p><strong>Estado:</strong> ${isActive ? 'Activa' : 'Inactiva'}</p>
+              </div>
+            `,
+            icon: 'success',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        }
+      }
     });
   }
 
@@ -324,9 +449,190 @@ export class BanksComponent implements OnInit {
   }
 
   deleteBankAccount(id: string) {
-    if (confirm('¿Está seguro de eliminar esta cuenta bancaria?')) {
-      this.bankAccounts = this.bankAccounts.filter(acc => acc.id !== id);
-    }
+    const account = this.bankAccounts.find(acc => acc.id === id);
+    if (!account) return;
+
+    Swal.fire({
+      title: '¿Eliminar Cuenta Bancaria?',
+      html: `
+        <div class="text-start">
+          <p>¿Estás seguro de que deseas eliminar esta cuenta bancaria?</p>
+          <div class="alert alert-warning">
+            <strong>Banco:</strong> ${account.bankName}<br>
+            <strong>Cuenta:</strong> ${account.accountName}<br>
+            <strong>Número:</strong> ${account.accountNumber}<br>
+            <strong>Tipo:</strong> ${this.getBankAccountTypeName(account.accountType)}<br>
+            <strong>Saldo:</strong> ${this.formatCurrency(account.balance)}
+          </div>
+          <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Esta acción no se puede deshacer y eliminará todos los movimientos asociados.</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'swal-popup',
+        title: 'swal-title'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.bankAccounts = this.bankAccounts.filter(acc => acc.id !== id);
+        // Also remove related movements
+        this.bankMovements = this.bankMovements.filter(mov => mov.bankAccountId !== id);
+        this.applyMovementFilters();
+        
+        Swal.fire({
+          title: '¡Eliminada!',
+          text: 'La cuenta bancaria ha sido eliminada exitosamente.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    });
+  }
+
+  showNewBankAccountModal() {
+    Swal.fire({
+      title: '¡Nueva Cuenta Bancaria!',
+      html: `
+        <form id="newBankForm">
+          <div class="mb-3 text-start">
+            <label for="newBankName" class="form-label">Banco *</label>
+            <input type="text" id="newBankName" class="form-control" placeholder="Nombre del banco" required minlength="3">
+          </div>
+          <div class="mb-3 text-start">
+            <label for="newAccountName" class="form-label">Nombre de la Cuenta *</label>
+            <input type="text" id="newAccountName" class="form-control" placeholder="Nombre descriptivo" required minlength="3">
+          </div>
+          <div class="mb-3 text-start">
+            <label for="newAccountNumber" class="form-label">Número de Cuenta *</label>
+            <input type="text" id="newAccountNumber" class="form-control" placeholder="123-456789-01" required pattern="^[0-9-]+$">
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label for="newAccountType" class="form-label">Tipo de Cuenta *</label>
+              <select id="newAccountType" class="form-select" required>
+                <option value="">Selecciona un tipo</option>
+                ${this.bankAccountTypes.map(type => 
+                  `<option value="${type}">${this.getBankAccountTypeName(type)}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="newCurrency" class="form-label">Moneda *</label>
+              <select id="newCurrency" class="form-select" required>
+                <option value="COP" selected>COP - Peso Colombiano</option>
+                <option value="USD">USD - Dólar Americano</option>
+                <option value="EUR">EUR - Euro</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3 text-start">
+            <label for="newBalance" class="form-label">Saldo Inicial *</label>
+            <input type="number" id="newBalance" class="form-control" placeholder="0.00" required step="0.01" value="0">
+          </div>
+          <div class="mb-3 text-start">
+            <div class="form-check">
+              <input type="checkbox" id="newIsActive" class="form-check-input" checked>
+              <label for="newIsActive" class="form-check-label">Cuenta activa</label>
+            </div>
+          </div>
+        </form>
+      `,
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonColor: '#198754',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Crear Cuenta',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'swal-popup',
+        title: 'swal-title'
+      },
+      preConfirm: () => {
+        const bankName = (document.getElementById('newBankName') as HTMLInputElement).value;
+        const accountName = (document.getElementById('newAccountName') as HTMLInputElement).value;
+        const accountNumber = (document.getElementById('newAccountNumber') as HTMLInputElement).value;
+        const accountType = (document.getElementById('newAccountType') as HTMLSelectElement).value;
+        const currency = (document.getElementById('newCurrency') as HTMLSelectElement).value;
+        const balance = (document.getElementById('newBalance') as HTMLInputElement).value;
+        const isActive = (document.getElementById('newIsActive') as HTMLInputElement).checked;
+
+        if (!bankName || !accountName || !accountNumber || !accountType || !currency) {
+          Swal.showValidationMessage('Por favor completa todos los campos obligatorios');
+          return false;
+        }
+
+        if (bankName.length < 3 || accountName.length < 3) {
+          Swal.showValidationMessage('El nombre del banco y de la cuenta deben tener al menos 3 caracteres');
+          return false;
+        }
+
+        if (!/^[0-9-]+$/.test(accountNumber)) {
+          Swal.showValidationMessage('El número de cuenta solo puede contener números y guiones');
+          return false;
+        }
+
+        // Verificar si el número de cuenta ya existe
+        const existingAccount = this.bankAccounts.find(acc => acc.accountNumber === accountNumber);
+        if (existingAccount) {
+          Swal.showValidationMessage('Ya existe una cuenta con este número');
+          return false;
+        }
+
+        return {
+          bankName: bankName,
+          accountName: accountName,
+          accountNumber: accountNumber,
+          accountType: accountType as BankAccountType,
+          currency: currency,
+          balance: parseFloat(balance) || 0,
+          isActive: isActive
+        };
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const { bankName, accountName, accountNumber, accountType, currency, balance, isActive } = result.value;
+        
+        // Crear nueva cuenta bancaria
+        const newAccount: BankAccount = {
+          id: Date.now().toString(),
+          bankName: bankName,
+          accountName: accountName,
+          accountNumber: accountNumber,
+          accountType: accountType,
+          currency: currency,
+          balance: balance,
+          isActive: isActive,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        this.bankAccounts.push(newAccount);
+        
+        Swal.fire({
+          title: '¡Cuenta Creada!',
+          html: `
+            <div class="text-start">
+              <p><strong>Banco:</strong> ${bankName}</p>
+              <p><strong>Cuenta:</strong> ${accountName}</p>
+              <p><strong>Número:</strong> ${accountNumber}</p>
+              <p><strong>Tipo:</strong> ${this.getBankAccountTypeName(accountType)}</p>
+              <p><strong>Moneda:</strong> ${currency}</p>
+              <p><strong>Saldo:</strong> ${this.formatCurrency(balance)}</p>
+              <p><strong>Estado:</strong> ${isActive ? 'Activa' : 'Inactiva'}</p>
+            </div>
+          `,
+          icon: 'success',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
+    });
   }
 
   deleteMovement(id: string) {
@@ -400,6 +706,118 @@ export class BanksComponent implements OnInit {
       [MovementType.INTEREST]: 'Interés'
     };
     return typeNames[type];
+  }
+
+  async showNewMovementModal() {
+    const bankAccountOptions = this.bankAccounts.map(account => 
+      `<option value="${account.id}">${account.bankName} - ${account.accountNumber}</option>`
+    ).join('');
+
+    const { value: formValues } = await Swal.fire({
+      title: 'Nuevo Movimiento Bancario',
+      html: `
+        <div class="mb-3">
+          <label for="bankAccountId" class="form-label">Cuenta Bancaria</label>
+          <select id="bankAccountId" class="form-select" required>
+            <option value="">Seleccionar cuenta</option>
+            ${bankAccountOptions}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="type" class="form-label">Tipo de Movimiento</label>
+          <select id="type" class="form-select" required>
+            <option value="">Seleccionar tipo</option>
+            <option value="DEPOSIT">Depósito</option>
+            <option value="WITHDRAWAL">Retiro</option>
+            <option value="TRANSFER_IN">Transferencia Entrante</option>
+            <option value="TRANSFER_OUT">Transferencia Saliente</option>
+            <option value="INTEREST">Interés</option>
+            <option value="FEE">Comisión</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="amount" class="form-label">Monto</label>
+          <input id="amount" type="number" step="0.01" min="0" class="form-control" placeholder="0.00" required>
+        </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">Descripción</label>
+          <input id="description" type="text" class="form-control" placeholder="Descripción del movimiento" required>
+        </div>
+        <div class="mb-3">
+          <label for="reference" class="form-label">Referencia</label>
+          <input id="reference" type="text" class="form-control" placeholder="Número de referencia (opcional)">
+        </div>
+        <div class="mb-3">
+          <label for="date" class="form-label">Fecha</label>
+          <input id="date" type="date" class="form-control" value="${new Date().toISOString().split('T')[0]}" required>
+        </div>
+        <div class="form-check">
+          <input id="isReconciled" type="checkbox" class="form-check-input">
+          <label for="isReconciled" class="form-check-label">Conciliado</label>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Crear Movimiento',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        confirmButton: 'btn btn-primary me-2',
+        cancelButton: 'btn btn-secondary'
+      },
+      buttonsStyling: false,
+      preConfirm: () => {
+        const bankAccountId = (document.getElementById('bankAccountId') as HTMLSelectElement).value;
+        const type = (document.getElementById('type') as HTMLSelectElement).value;
+        const amount = (document.getElementById('amount') as HTMLInputElement).value;
+        const description = (document.getElementById('description') as HTMLInputElement).value;
+        const reference = (document.getElementById('reference') as HTMLInputElement).value;
+        const date = (document.getElementById('date') as HTMLInputElement).value;
+        const isReconciled = (document.getElementById('isReconciled') as HTMLInputElement).checked;
+
+        if (!bankAccountId) {
+          Swal.showValidationMessage('Debe seleccionar una cuenta bancaria');
+          return false;
+        }
+        if (!type) {
+          Swal.showValidationMessage('Debe seleccionar un tipo de movimiento');
+          return false;
+        }
+        if (!amount || parseFloat(amount) <= 0) {
+          Swal.showValidationMessage('El monto debe ser mayor a 0');
+          return false;
+        }
+        if (!description || description.trim().length < 3) {
+          Swal.showValidationMessage('La descripción debe tener al menos 3 caracteres');
+          return false;
+        }
+        if (!date) {
+          Swal.showValidationMessage('Debe seleccionar una fecha');
+          return false;
+        }
+
+        return {
+          bankAccountId,
+          type,
+          amount,
+          description: description.trim(),
+          reference: reference.trim(),
+          date,
+          isReconciled
+        };
+      }
+    });
+
+    if (formValues) {
+      this.createMovement(formValues);
+      
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Movimiento bancario creado correctamente',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
   }
 
   getBankAccountName(id: string): string {
