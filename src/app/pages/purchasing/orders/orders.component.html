@@ -1,0 +1,502 @@
+<div class="container-fluid main-container">
+  <app-navbar></app-navbar>
+
+  <div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 class="text-primary mb-1">
+              <i class="fas fa-file-invoice me-2"></i>Órdenes de Compra
+            </h2>
+            <p class="text-muted mb-0">Gestiona las órdenes de compra a proveedores</p>
+          </div>
+          <button class="btn btn-primary" (click)="showNewOrderForm()">
+            <i class="fas fa-plus me-2"></i>Nueva Orden
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                  <i class="fas fa-file-invoice fa-lg"></i>
+                </div>
+              </div>
+              <div class="flex-grow-1 ms-3">
+                <h6 class="mb-0">Total Órdenes</h6>
+                <h4 class="mb-0 text-primary">{{totalOrders}}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                  <i class="fas fa-clock fa-lg"></i>
+                </div>
+              </div>
+              <div class="flex-grow-1 ms-3">
+                <h6 class="mb-0">Pendientes</h6>
+                <h4 class="mb-0 text-warning">{{pendingOrders}}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+                  <i class="fas fa-check-circle fa-lg"></i>
+                </div>
+              </div>
+              <div class="flex-grow-1 ms-3">
+                <h6 class="mb-0">Aprobadas</h6>
+                <h4 class="mb-0 text-success">{{approvedOrders}}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0">
+                <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
+                  <i class="fas fa-euro-sign fa-lg"></i>
+                </div>
+              </div>
+              <div class="flex-grow-1 ms-3">
+                <h6 class="mb-0">Valor Total</h6>
+                <h4 class="mb-0 text-info">{{totalValue | currency:'EUR':'symbol':'1.2-2'}}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Número de orden, proveedor..." 
+                  [(ngModel)]="searchTerm"
+                  (ngModelChange)="applyFilters()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select 
+                  class="form-select" 
+                  [(ngModel)]="statusFilter"
+                  (ngModelChange)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option [value]="PurchaseOrderStatus.DRAFT">Borrador</option>
+                  <option [value]="PurchaseOrderStatus.PENDING">Pendiente</option>
+                  <option [value]="PurchaseOrderStatus.APPROVED">Aprobada</option>
+                  <option [value]="PurchaseOrderStatus.SENT">Enviada</option>
+                  <option [value]="PurchaseOrderStatus.RECEIVED">Recibida</option>
+                  <option [value]="PurchaseOrderStatus.CANCELLED">Cancelada</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Proveedor</label>
+                <select 
+                  class="form-select" 
+                  [(ngModel)]="supplierFilter"
+                  (ngModelChange)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option *ngFor="let supplier of suppliers" [value]="supplier.id">{{supplier.name}}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  [(ngModel)]="dateFromFilter"
+                  (ngModelChange)="applyFilters()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  [(ngModel)]="dateToFilter"
+                  (ngModelChange)="applyFilters()">
+              </div>
+              <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-secondary" (click)="clearFilters()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders List -->
+    <div class="row" *ngIf="!showForm">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Lista de Órdenes</h5>
+            <button class="btn btn-outline-success btn-sm" (click)="exportToExcel()">
+              <i class="fas fa-download me-1"></i>Exportar
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Número</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Fecha Esperada</th>
+                    <th>Estado</th>
+                    <th>Prioridad</th>
+                    <th>Total</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let order of filteredOrders">
+                    <td class="fw-semibold text-primary">{{order.orderNumber}}</td>
+                    <td>{{order.supplierName}}</td>
+                    <td>{{order.orderDate | date:'dd/MM/yyyy'}}</td>
+                    <td>{{order.expectedDate | date:'dd/MM/yyyy'}}</td>
+                    <td>
+                      <span class="badge" [class]="getStatusBadgeClass(order.status)">
+                        {{getStatusText(order.status)}}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge" [class]="getPriorityBadgeClass(order.priority)">
+                        {{getPriorityText(order.priority)}}
+                      </span>
+                    </td>
+                    <td class="fw-semibold">{{order.totalAmount | currency:'EUR':'symbol':'1.2-2'}}</td>
+                    <td class="text-center">
+                      <div class="btn-group" role="group">
+                        <button 
+                          class="btn btn-outline-primary btn-sm" 
+                          (click)="editOrder(order)"
+                          title="Editar">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button 
+                          class="btn btn-outline-info btn-sm" 
+                          (click)="viewOrder(order)"
+                          title="Ver detalles">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button 
+                          class="btn btn-outline-success btn-sm" 
+                          (click)="duplicateOrder(order)"
+                          title="Duplicar">
+                          <i class="fas fa-copy"></i>
+                        </button>
+                        <button 
+                          class="btn btn-outline-danger btn-sm" 
+                          (click)="deleteOrder(order)"
+                          [disabled]="order.status !== PurchaseOrderStatus.DRAFT"
+                          title="Eliminar">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredOrders.length === 0">
+                    <td colspan="8" class="text-center py-4 text-muted">
+                      <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                      No se encontraron órdenes de compra
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Form -->
+    <div class="row" *ngIf="showForm">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-file-invoice me-2"></i>
+                {{editingOrder ? 'Editar' : 'Nueva'}} Orden de Compra
+              </h5>
+              <button type="button" class="btn btn-outline-secondary" (click)="cancelForm()">
+                <i class="fas fa-times me-2"></i>Cancelar
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="orderForm" (ngSubmit)="onSubmit()">
+              <!-- Basic Information -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <label class="form-label">Número de Orden *</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    formControlName="orderNumber"
+                    [class.is-invalid]="orderForm.get('orderNumber')?.invalid && orderForm.get('orderNumber')?.touched">
+                  <div class="invalid-feedback">
+                    El número de orden es requerido (mín. 3 caracteres)
+                  </div>
+                </div>
+                
+                <div class="col-md-4">
+                  <label class="form-label">Proveedor *</label>
+                  <select 
+                    class="form-select" 
+                    formControlName="supplierId"
+                    (change)="onSupplierChange()"
+                    [class.is-invalid]="orderForm.get('supplierId')?.invalid && orderForm.get('supplierId')?.touched">
+                    <option value="">Seleccionar proveedor</option>
+                    <option *ngFor="let supplier of suppliers" [value]="supplier.id">{{supplier.name}}</option>
+                  </select>
+                  <div class="invalid-feedback">
+                    El proveedor es requerido
+                  </div>
+                </div>
+                
+                <div class="col-md-4">
+                  <label class="form-label">Estado *</label>
+                  <select 
+                    class="form-select" 
+                    formControlName="status"
+                    [class.is-invalid]="orderForm.get('status')?.invalid && orderForm.get('status')?.touched">
+                    <option [value]="PurchaseOrderStatus.DRAFT">Borrador</option>
+                    <option [value]="PurchaseOrderStatus.PENDING">Pendiente</option>
+                    <option [value]="PurchaseOrderStatus.APPROVED">Aprobada</option>
+                    <option [value]="PurchaseOrderStatus.SENT">Enviada</option>
+                    <option [value]="PurchaseOrderStatus.RECEIVED">Recibida</option>
+                    <option [value]="PurchaseOrderStatus.CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                  <label class="form-label">Fecha de Orden *</label>
+                  <input 
+                    type="date" 
+                    class="form-control" 
+                    formControlName="orderDate"
+                    [class.is-invalid]="orderForm.get('orderDate')?.invalid && orderForm.get('orderDate')?.touched">
+                </div>
+                
+                <div class="col-md-3">
+                  <label class="form-label">Fecha Esperada *</label>
+                  <input 
+                    type="date" 
+                    class="form-control" 
+                    formControlName="expectedDate"
+                    [class.is-invalid]="orderForm.get('expectedDate')?.invalid && orderForm.get('expectedDate')?.touched">
+                </div>
+                
+                <div class="col-md-3">
+                  <label class="form-label">Prioridad</label>
+                  <select class="form-select" formControlName="priority">
+                    <option value="LOW">Baja</option>
+                    <option value="NORMAL">Normal</option>
+                    <option value="HIGH">Alta</option>
+                    <option value="URGENT">Urgente</option>
+                  </select>
+                </div>
+                
+                <div class="col-md-3">
+                  <label class="form-label">Términos de Pago</label>
+                  <select class="form-select" formControlName="paymentTerms">
+                    <option value="IMMEDIATE">Inmediato</option>
+                    <option value="NET_15">Neto 15 días</option>
+                    <option value="NET_30">Neto 30 días</option>
+                    <option value="NET_45">Neto 45 días</option>
+                    <option value="NET_60">Neto 60 días</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Delivery Address -->
+              <div class="mb-4">
+                <h6 class="border-bottom pb-2 mb-3">Dirección de Entrega</h6>
+                <div formGroupName="deliveryAddress">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Calle *</label>
+                      <input type="text" class="form-control" formControlName="street">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Ciudad *</label>
+                      <input type="text" class="form-control" formControlName="city">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Estado/Provincia *</label>
+                      <input type="text" class="form-control" formControlName="state">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">Código Postal *</label>
+                      <input type="text" class="form-control" formControlName="postalCode">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">País *</label>
+                      <input type="text" class="form-control" formControlName="country">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Line Items -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="border-bottom pb-2 mb-0">Items de la Orden</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="addLineItem()">
+                    <i class="fas fa-plus me-1"></i>Agregar Item
+                  </button>
+                </div>
+                
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 25%">Producto</th>
+                        <th style="width: 10%">Cantidad</th>
+                        <th style="width: 15%">Precio Unit.</th>
+                        <th style="width: 10%">Descuento %</th>
+                        <th style="width: 10%">IVA %</th>
+                        <th style="width: 15%">Total Línea</th>
+                        <th style="width: 10%">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody formArrayName="items">
+                      <tr *ngFor="let item of lineItems.controls; let i = index" [formGroupName]="i">
+                        <td>
+                          <select class="form-select" formControlName="productId" (change)="onProductChange(i)">
+                            <option value="">Seleccionar producto</option>
+                            <option *ngFor="let product of products" [value]="product.id">{{product.name}} ({{product.code}})</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input type="number" class="form-control" formControlName="quantity" min="1" step="1">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control" formControlName="unitPrice" min="0" step="0.01">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control" formControlName="discount" min="0" max="100" step="0.01">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control" formControlName="taxRate" min="0" max="100" step="0.01">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control" formControlName="lineTotal" readonly style="background-color: #f8f9fa;">
+                        </td>
+                        <td class="text-center">
+                          <button 
+                            type="button" 
+                            class="btn btn-outline-danger btn-sm" 
+                            (click)="removeLineItem(i)"
+                            [disabled]="lineItems.length <= 1">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Order Totals -->
+              <div class="row">
+                <div class="col-md-8">
+                  <label class="form-label">Notas</label>
+                  <textarea class="form-control" formControlName="notes" rows="4" placeholder="Notas adicionales..."></textarea>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h6 class="card-title">Resumen de Totales</h6>
+                      <div class="row mb-2">
+                        <div class="col-6">Subtotal:</div>
+                        <div class="col-6 text-end">{{orderForm.get('subtotal')?.value | currency:'EUR':'symbol':'1.2-2'}}</div>
+                      </div>
+                      <div class="row mb-2">
+                        <div class="col-6">IVA:</div>
+                        <div class="col-6 text-end">{{orderForm.get('taxAmount')?.value | currency:'EUR':'symbol':'1.2-2'}}</div>
+                      </div>
+                      <div class="row mb-2">
+                        <div class="col-6">Envío:</div>
+                        <div class="col-6">
+                          <input type="number" class="form-control form-control-sm" formControlName="shippingCost" min="0" step="0.01">
+                        </div>
+                      </div>
+                      <div class="row mb-2">
+                        <div class="col-6">Descuento:</div>
+                        <div class="col-6">
+                          <input type="number" class="form-control form-control-sm" formControlName="discountAmount" min="0" step="0.01">
+                        </div>
+                      </div>
+                      <hr>
+                      <div class="row">
+                        <div class="col-6"><strong>Total:</strong></div>
+                        <div class="col-6 text-end"><strong>{{orderForm.get('totalAmount')?.value | currency:'EUR':'symbol':'1.2-2'}}</strong></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form Actions -->
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" (click)="cancelForm()">
+                      <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" [disabled]="orderForm.invalid">
+                      <i class="fas fa-save me-2"></i>
+                      {{editingOrder ? 'Actualizar' : 'Crear'}} Orden
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

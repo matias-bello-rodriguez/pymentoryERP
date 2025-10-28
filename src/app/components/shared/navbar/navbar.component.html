@@ -15,12 +15,7 @@
     
     <div class="collapse navbar-collapse" [class.show]="!isMenuCollapsed">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/home" routerLinkActive="active">
-            <i class="fas fa-home me-1"></i>Inicio
-          </a>
-        </li>
-        
+
         <!-- Accounting Dropdown -->
         <li class="nav-item dropdown">
           <a 
@@ -58,10 +53,40 @@
           </ul>
         </li>
         
-        <li class="nav-item">
-          <a class="nav-link" href="#">
-            <i class="fas fa-box me-1"></i>Productos
+        <li class="nav-item dropdown">
+          <a 
+            class="nav-link dropdown-toggle" 
+            href="#" 
+            id="inventoryDropdown" 
+            role="button" 
+            data-bs-toggle="dropdown"
+          >
+            <i class="fas fa-warehouse me-1"></i>Inventario
           </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/inventory/products"><i class="fas fa-boxes me-2"></i>Productos</a></li>
+            <li><a class="dropdown-item" routerLink="/inventory/stock"><i class="fas fa-exchange-alt me-2"></i>Movimientos de Stock</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-chart-bar me-2"></i>Reportes de Inventario</a></li>
+          </ul>
+        </li>
+        <li class="nav-item dropdown">
+          <a 
+            class="nav-link dropdown-toggle" 
+            href="#" 
+            id="purchasingDropdown" 
+            role="button" 
+            data-bs-toggle="dropdown"
+          >
+            <i class="fas fa-shopping-cart me-1"></i>Compras / Proveedores
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/purchasing/suppliers"><i class="fas fa-truck me-2"></i>Proveedores</a></li>
+            <li><a class="dropdown-item" routerLink="/purchasing/orders"><i class="fas fa-file-invoice me-2"></i>Órdenes de Compra</a></li>
+            <li><a class="dropdown-item" routerLink="/purchasing/receipts"><i class="fas fa-clipboard-check me-2"></i>Recepción de Productos</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-chart-line me-2"></i>Reportes de Compras</a></li>
+          </ul>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#">

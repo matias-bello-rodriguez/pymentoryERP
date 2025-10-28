@@ -13,7 +13,7 @@ import { NavbarComponent } from '../../components/shared/navbar/navbar.component
 export class HomeComponent {
   stats = [
     { title: 'Ventas Totales', value: '$125,430', icon: 'fas fa-chart-line', color: 'success' },
-    { title: 'Productos', value: '1,245', icon: 'fas fa-box', color: 'primary' },
+    { title: 'Inventario', value: '1,245', icon: 'fas fa-warehouse', color: 'primary' },
     { title: 'Clientes', value: '356', icon: 'fas fa-users', color: 'info' },
     { title: 'Pedidos Pendientes', value: '23', icon: 'fas fa-clock', color: 'warning' }
   ];

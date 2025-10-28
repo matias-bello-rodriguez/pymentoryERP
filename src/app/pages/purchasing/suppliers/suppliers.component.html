@@ -1,0 +1,512 @@
+<div class="container-fluid main-container">
+  <!-- Header -->
+  <app-navbar></app-navbar>
+
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-truck text-primary me-2"></i>Gestión de Proveedores
+        </h2>
+        <p class="text-muted mb-0">Administra información de proveedores y su rendimiento</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-custom" (click)="showForm = !showForm">
+          <i class="fas fa-plus me-2"></i>Nuevo Proveedor
+        </button>
+        <button class="btn btn-success btn-custom" (click)="exportSuppliers()">
+          <i class="fas fa-download me-2"></i>Exportar
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card card-custom bg-primary text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{totalSuppliers}}</h4>
+                <p class="mb-0">Total Proveedores</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-truck fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-custom bg-success text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{activeSuppliers}}</h4>
+                <p class="mb-0">Activos</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-check-circle fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-custom bg-warning text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{formatCurrency(totalBalance)}}</h4>
+                <p class="mb-0">Saldo Total</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-euro-sign fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-custom bg-info text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{averageRating.toFixed(1)}} ★</h4>
+                <p class="mb-0">Calificación Promedio</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-star fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supplier Form -->
+    <div class="row mb-4" *ngIf="showForm">
+      <div class="col-12">
+        <div class="card card-custom">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-plus me-2"></i>{{editingSupplier ? 'Editar' : 'Nuevo'}} Proveedor
+            </h5>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="supplierForm" (ngSubmit)="onSubmit()">
+              <!-- Basic Information -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <h6 class="text-primary border-bottom pb-2">Información Básica</h6>
+                </div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                  <label class="form-label">Código *</label>
+                  <input type="text" class="form-control" formControlName="code" 
+                         [class.is-invalid]="supplierForm.get('code')?.invalid && supplierForm.get('code')?.touched">
+                  <div class="invalid-feedback">
+                    El código es requerido (mínimo 3 caracteres)
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Nombre Comercial *</label>
+                  <input type="text" class="form-control" formControlName="name"
+                         [class.is-invalid]="supplierForm.get('name')?.invalid && supplierForm.get('name')?.touched">
+                  <div class="invalid-feedback">
+                    El nombre es requerido
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Estado *</label>
+                  <select class="form-select" formControlName="status">
+                    <option [value]="SupplierStatus.ACTIVE">Activo</option>
+                    <option [value]="SupplierStatus.INACTIVE">Inactivo</option>
+                    <option [value]="SupplierStatus.BLOCKED">Bloqueado</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Razón Social *</label>
+                  <input type="text" class="form-control" formControlName="legalName"
+                         [class.is-invalid]="supplierForm.get('legalName')?.invalid && supplierForm.get('legalName')?.touched">
+                  <div class="invalid-feedback">
+                    La razón social es requerida
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Tipo *</label>
+                  <select class="form-select" formControlName="type"
+                          [class.is-invalid]="supplierForm.get('type')?.invalid && supplierForm.get('type')?.touched">
+                    <option value="">Seleccionar tipo</option>
+                    <option [value]="SupplierType.GOODS">Productos</option>
+                    <option [value]="SupplierType.SERVICES">Servicios</option>
+                    <option [value]="SupplierType.BOTH">Ambos</option>
+                  </select>
+                  <div class="invalid-feedback">
+                    El tipo es requerido
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">NIF/CIF *</label>
+                  <input type="text" class="form-control" formControlName="taxId"
+                         [class.is-invalid]="supplierForm.get('taxId')?.invalid && supplierForm.get('taxId')?.touched">
+                  <div class="invalid-feedback">
+                    El NIF/CIF es requerido
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact Information -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <h6 class="text-primary border-bottom pb-2">Información de Contacto</h6>
+                </div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <label class="form-label">Email Principal *</label>
+                  <input type="email" class="form-control" formControlName="email"
+                         [class.is-invalid]="supplierForm.get('email')?.invalid && supplierForm.get('email')?.touched">
+                  <div class="invalid-feedback">
+                    El email es requerido y debe ser válido
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Teléfono Principal *</label>
+                  <input type="tel" class="form-control" formControlName="phone"
+                         [class.is-invalid]="supplierForm.get('phone')?.invalid && supplierForm.get('phone')?.touched">
+                  <div class="invalid-feedback">
+                    El teléfono es requerido
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Sitio Web</label>
+                  <input type="url" class="form-control" formControlName="website">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Persona de Contacto *</label>
+                  <input type="text" class="form-control" formControlName="contactPerson"
+                         [class.is-invalid]="supplierForm.get('contactPerson')?.invalid && supplierForm.get('contactPerson')?.touched">
+                  <div class="invalid-feedback">
+                    La persona de contacto es requerida
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Email de Contacto *</label>
+                  <input type="email" class="form-control" formControlName="contactEmail"
+                         [class.is-invalid]="supplierForm.get('contactEmail')?.invalid && supplierForm.get('contactEmail')?.touched">
+                  <div class="invalid-feedback">
+                    El email de contacto es requerido y debe ser válido
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Teléfono de Contacto *</label>
+                  <input type="tel" class="form-control" formControlName="contactPhone"
+                         [class.is-invalid]="supplierForm.get('contactPhone')?.invalid && supplierForm.get('contactPhone')?.touched">
+                  <div class="invalid-feedback">
+                    El teléfono de contacto es requerido
+                  </div>
+                </div>
+              </div>
+
+              <!-- Address Information -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <h6 class="text-primary border-bottom pb-2">Dirección</h6>
+                </div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label">Dirección *</label>
+                  <input type="text" class="form-control" formControlName="street"
+                         [class.is-invalid]="supplierForm.get('street')?.invalid && supplierForm.get('street')?.touched">
+                  <div class="invalid-feedback">
+                    La dirección es requerida
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Ciudad *</label>
+                  <input type="text" class="form-control" formControlName="city"
+                         [class.is-invalid]="supplierForm.get('city')?.invalid && supplierForm.get('city')?.touched">
+                  <div class="invalid-feedback">
+                    La ciudad es requerida
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Provincia *</label>
+                  <input type="text" class="form-control" formControlName="state"
+                         [class.is-invalid]="supplierForm.get('state')?.invalid && supplierForm.get('state')?.touched">
+                  <div class="invalid-feedback">
+                    La provincia es requerida
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Código Postal *</label>
+                  <input type="text" class="form-control" formControlName="postalCode"
+                         [class.is-invalid]="supplierForm.get('postalCode')?.invalid && supplierForm.get('postalCode')?.touched">
+                  <div class="invalid-feedback">
+                    El código postal es requerido
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">País *</label>
+                  <input type="text" class="form-control" formControlName="country"
+                         [class.is-invalid]="supplierForm.get('country')?.invalid && supplierForm.get('country')?.touched">
+                  <div class="invalid-feedback">
+                    El país es requerido
+                  </div>
+                </div>
+              </div>
+
+              <!-- Financial Information -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <h6 class="text-primary border-bottom pb-2">Información Financiera</h6>
+                </div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                  <label class="form-label">Términos de Pago *</label>
+                  <select class="form-select" formControlName="paymentTerms"
+                          [class.is-invalid]="supplierForm.get('paymentTerms')?.invalid && supplierForm.get('paymentTerms')?.touched">
+                    <option value="">Seleccionar términos</option>
+                    <option [value]="PaymentTerms.IMMEDIATE">Inmediato</option>
+                    <option [value]="PaymentTerms.NET_15">15 días</option>
+                    <option [value]="PaymentTerms.NET_30">30 días</option>
+                    <option [value]="PaymentTerms.NET_45">45 días</option>
+                    <option [value]="PaymentTerms.NET_60">60 días</option>
+                    <option [value]="PaymentTerms.NET_90">90 días</option>
+                  </select>
+                  <div class="invalid-feedback">
+                    Los términos de pago son requeridos
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Límite de Crédito *</label>
+                  <div class="input-group">
+                    <span class="input-group-text">€</span>
+                    <input type="number" class="form-control" formControlName="creditLimit" min="0"
+                           [class.is-invalid]="supplierForm.get('creditLimit')?.invalid && supplierForm.get('creditLimit')?.touched">
+                  </div>
+                  <div class="invalid-feedback">
+                    El límite de crédito debe ser mayor o igual a 0
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Calificación *</label>
+                  <select class="form-select" formControlName="rating">
+                    <option value="1">1 ★ - Muy Malo</option>
+                    <option value="2">2 ★ - Malo</option>
+                    <option value="3">3 ★ - Regular</option>
+                    <option value="4">4 ★ - Bueno</option>
+                    <option value="5">5 ★ - Excelente</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Categorías</label>
+                  <input type="text" class="form-control" formControlName="categories" 
+                         placeholder="Ej: Electrónicos, Informática">
+                  <small class="form-text text-muted">Separar con comas</small>
+                </div>
+              </div>
+
+              <!-- Bank Information -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <h6 class="text-primary border-bottom pb-2">Información Bancaria (Opcional)</h6>
+                </div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <label class="form-label">Banco</label>
+                  <input type="text" class="form-control" formControlName="bankName">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Número de Cuenta</label>
+                  <input type="text" class="form-control" formControlName="accountNumber">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Código del Banco</label>
+                  <input type="text" class="form-control" formControlName="routingNumber">
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="row g-3 mb-4">
+                <div class="col-12">
+                  <label class="form-label">Notas</label>
+                  <textarea class="form-control" formControlName="notes" rows="3" 
+                            placeholder="Observaciones adicionales sobre el proveedor"></textarea>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2" [disabled]="supplierForm.invalid">
+                  <i class="fas fa-save me-2"></i>{{editingSupplier ? 'Actualizar' : 'Guardar'}}
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="resetForm()">
+                  <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card card-custom">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label">Buscar</label>
+                <input type="text" class="form-control" [(ngModel)]="searchTerm" 
+                       (input)="applyFilters()" placeholder="Buscar por código, nombre o contacto...">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select class="form-select" [(ngModel)]="statusFilter" (change)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option [value]="SupplierStatus.ACTIVE">Activos</option>
+                  <option [value]="SupplierStatus.INACTIVE">Inactivos</option>
+                  <option [value]="SupplierStatus.BLOCKED">Bloqueados</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" [(ngModel)]="typeFilter" (change)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option [value]="SupplierType.GOODS">Productos</option>
+                  <option [value]="SupplierType.SERVICES">Servicios</option>
+                  <option [value]="SupplierType.BOTH">Ambos</option>
+                </select>
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-secondary w-100" (click)="clearFilters()">
+                  <i class="fas fa-eraser me-2"></i>Limpiar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-custom">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-list me-2"></i>Lista de Proveedores ({{filteredSuppliers.length}})
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Código</th>
+                    <th>Proveedor</th>
+                    <th>Contacto</th>
+                    <th>Tipo</th>
+                    <th>Términos</th>
+                    <th>Saldo</th>
+                    <th>Calificación</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let supplier of filteredSuppliers">
+                    <td>
+                      <strong>{{supplier.code}}</strong>
+                      <br>
+                      <small class="text-muted">{{supplier.taxId}}</small>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>{{supplier.name}}</strong>
+                        <br>
+                        <small class="text-muted">{{supplier.legalName}}</small>
+                        <br>
+                        <small class="text-muted">
+                          <i class="fas fa-map-marker-alt me-1"></i>{{supplier.address.city}}, {{supplier.address.country}}
+                        </small>
+                        <br>
+                        <span *ngFor="let category of supplier.categories" class="badge bg-secondary me-1">{{category}}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>{{supplier.contactPerson}}</strong>
+                        <br>
+                        <small class="text-muted">
+                          <i class="fas fa-envelope me-1"></i>{{supplier.contactEmail}}
+                        </small>
+                        <br>
+                        <small class="text-muted">
+                          <i class="fas fa-phone me-1"></i>{{supplier.contactPhone}}
+                        </small>
+                        <br>
+                        <small class="text-muted" *ngIf="supplier.website">
+                          <i class="fas fa-globe me-1"></i>{{supplier.website}}
+                        </small>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge bg-info">{{getTypeText(supplier.type)}}</span>
+                    </td>
+                    <td>{{getPaymentTermsText(supplier.paymentTerms)}}</td>
+                    <td>
+                      <strong>{{formatCurrency(supplier.currentBalance)}}</strong>
+                      <br>
+                      <small class="text-muted">
+                        Límite: {{formatCurrency(supplier.creditLimit)}}
+                      </small>
+                    </td>
+                    <td>
+                      <span class="text-warning">{{getRatingStars(supplier.rating)}}</span>
+                      <br>
+                      <small class="text-muted">{{supplier.rating}}/5</small>
+                    </td>
+                    <td>
+                      <span class="badge" [class]="'bg-' + getStatusClass(supplier.status)">
+                        {{getStatusText(supplier.status)}}
+                      </span>
+                      <br>
+                      <button class="btn btn-sm btn-outline-secondary mt-1" 
+                              (click)="toggleSupplierStatus(supplier)" 
+                              title="Cambiar estado">
+                        <i class="fas" [class]="supplier.status === SupplierStatus.ACTIVE ? 'fa-pause' : 'fa-play'"></i>
+                      </button>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" (click)="editSupplier(supplier)" title="Editar">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" (click)="deleteSupplier(supplier)" title="Eliminar">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="filteredSuppliers.length === 0" class="text-center py-5">
+              <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+              <p class="text-muted">No se encontraron proveedores</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

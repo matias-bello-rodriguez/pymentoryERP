@@ -410,3 +410,256 @@ body {
     background: white !important;
   }
 }
+
+/* ==========================================
+   INVENTORY MODULE STYLES
+   ========================================== */
+
+/* Inventory alerts */
+.inventory-alert {
+  border-left: 4px solid #dc3545;
+  background: #fff5f5;
+}
+
+.inventory-alert.low-stock {
+  border-left-color: #ffc107;
+  background: #fffef0;
+}
+
+.inventory-alert.reorder-point {
+  border-left-color: #17a2b8;
+  background: #f0fbff;
+}
+
+.inventory-alert.overstock {
+  border-left-color: #6c757d;
+  background: #f8f9fa;
+}
+
+/* Stock status indicators */
+.stock-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stock-status.out-of-stock {
+  background: #dc3545;
+  color: white;
+}
+
+.stock-status.low-stock {
+  background: #ffc107;
+  color: #000;
+}
+
+.stock-status.normal-stock {
+  background: #28a745;
+  color: white;
+}
+
+.stock-status.overstock {
+  background: #17a2b8;
+  color: white;
+}
+
+/* Product cards */
+.product-card {
+  transition: all 0.3s ease;
+  border: 1px solid #dee2e6;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border-color: #007bff;
+}
+
+.product-image {
+  height: 200px;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.product-code {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #495057;
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Movement indicators */
+.movement-entry {
+  color: #28a745 !important;
+}
+
+.movement-exit {
+  color: #dc3545 !important;
+}
+
+.movement-adjustment {
+  color: #ffc107 !important;
+}
+
+/* Stock level bars */
+.stock-level-bar {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stock-level-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.stock-level-fill.normal {
+  background: #28a745;
+}
+
+.stock-level-fill.low {
+  background: #ffc107;
+}
+
+.stock-level-fill.critical {
+  background: #dc3545;
+}
+
+.stock-level-fill.excess {
+  background: #17a2b8;
+}
+
+/* Category icons */
+.category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  margin-right: 12px;
+}
+
+.category-electronics {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.category-clothing {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  color: white;
+}
+
+.category-food {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white;
+}
+
+.category-books {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  color: white;
+}
+
+.category-home {
+  background: linear-gradient(135deg, #fa709a, #fee140);
+  color: white;
+}
+
+.category-tools {
+  background: linear-gradient(135deg, #a8edea, #fed6e3);
+  color: #333;
+}
+
+.category-health {
+  background: linear-gradient(135deg, #ff9a9e, #fecfef);
+  color: white;
+}
+
+.category-sports {
+  background: linear-gradient(135deg, #96fbc4, #f9f586);
+  color: #333;
+}
+
+.category-other {
+  background: linear-gradient(135deg, #e0c3fc, #9bb5ff);
+  color: white;
+}
+
+/* Inventory summary cards */
+.inventory-summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.inventory-summary-card .card-body {
+  padding: 1.5rem;
+}
+
+.inventory-summary-card h4 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Movement form */
+.movement-form {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.movement-preview {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+/* Responsive inventory table */
+@media (max-width: 768px) {
+  .inventory-table {
+    font-size: 0.8rem;
+  }
+  
+  .inventory-table td,
+  .inventory-table th {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .product-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* Print styles for inventory reports */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .inventory-summary-card {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #dee2e6 !important;
+  }
+  
+  .stock-status {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #dee2e6 !important;
+  }
+}

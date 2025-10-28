@@ -1,0 +1,372 @@
+<div class="container-fluid main-container">
+  <app-navbar></app-navbar>
+
+  <div class="container-fluid mt-4">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 class="text-primary mb-1">
+              <i class="fas fa-truck-loading me-2"></i>Recepción de Productos
+            </h2>
+            <p class="text-muted mb-0">Gestiona las recepciones de mercadería de tus órdenes de compra</p>
+          </div>
+          <button class="btn btn-primary" (click)="openModal()">
+            <i class="fas fa-plus me-2"></i>Nueva Recepción
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Número, proveedor..." 
+                  [(ngModel)]="filterText"
+                  (ngModelChange)="onFilterChange()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select 
+                  class="form-select" 
+                  [(ngModel)]="filterStatus"
+                  (ngModelChange)="onFilterChange()">
+                  <option value="">Todos</option>
+                  <option [value]="ReceiptStatus.PENDING">Pendiente</option>
+                  <option [value]="ReceiptStatus.PARTIAL">Parcial</option>
+                  <option [value]="ReceiptStatus.COMPLETE">Completado</option>
+                  <option [value]="ReceiptStatus.CANCELLED">Cancelado</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Proveedor</label>
+                <select 
+                  class="form-select" 
+                  [(ngModel)]="filterSupplier"
+                  (ngModelChange)="onFilterChange()">
+                  <option value="">Todos</option>
+                  <option *ngFor="let supplier of suppliers" [value]="supplier.id">{{supplier.name}}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  [(ngModel)]="filterDateFrom"
+                  (ngModelChange)="onFilterChange()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  [(ngModel)]="filterDateTo"
+                  (ngModelChange)="onFilterChange()">
+              </div>
+              <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-secondary" (click)="clearFilters()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receipts Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Lista de Recepciones</h5>
+            <button class="btn btn-outline-success btn-sm" (click)="exportToCSV()">
+              <i class="fas fa-download me-1"></i>Exportar CSV
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Número</th>
+                    <th>Orden de Compra</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Recibido por</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let receipt of receipts">
+                    <td class="fw-semibold text-primary">{{receipt.receiptNumber}}</td>
+                    <td>{{receipt.purchaseOrderNumber}}</td>
+                    <td>{{receipt.supplierName}}</td>
+                    <td>{{receipt.receiptDate | date:'dd/MM/yyyy'}}</td>
+                    <td>
+                      <span class="badge" [class]="getStatusBadgeClass(receipt.status)">
+                        {{getStatusText(receipt.status)}}
+                      </span>
+                    </td>
+                    <td>{{receipt.receivedBy}}</td>
+                    <td class="text-center">
+                      <div class="btn-group" role="group">
+                        <button 
+                          class="btn btn-outline-primary btn-sm" 
+                          (click)="openModal(receipt)"
+                          title="Editar">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button 
+                          class="btn btn-outline-danger btn-sm" 
+                          (click)="deleteReceipt(receipt)"
+                          title="Eliminar">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="receipts.length === 0">
+                    <td colspan="7" class="text-center py-4 text-muted">
+                      <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                      No se encontraron recepciones
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="card-footer" *ngIf="getTotalPages() > 1">
+            <nav>
+              <ul class="pagination pagination-sm justify-content-center mb-0">
+                <li class="page-item" [class.disabled]="currentPage === 1">
+                  <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                </li>
+                <li *ngFor="let page of getPaginationArray()" 
+                    class="page-item" 
+                    [class.active]="currentPage === page">
+                  <button class="page-link" (click)="onPageChange(page)">{{page}}</button>
+                </li>
+                <li class="page-item" [class.disabled]="currentPage === getTotalPages()">
+                  <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === getTotalPages()">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <form [formGroup]="receiptForm" (ngSubmit)="onSubmit()">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-truck-loading me-2"></i>
+            {{editingReceipt ? 'Editar' : 'Nueva'}} Recepción
+          </h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="row g-3">
+            <!-- Basic Information -->
+            <div class="col-md-6">
+              <label class="form-label">Número de Recepción *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                formControlName="receiptNumber"
+                [class.is-invalid]="receiptForm.get('receiptNumber')?.invalid && receiptForm.get('receiptNumber')?.touched">
+              <div class="invalid-feedback">
+                El número de recepción es requerido
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">Orden de Compra *</label>
+              <select 
+                class="form-select" 
+                formControlName="purchaseOrderId"
+                (change)="onPurchaseOrderChange()"
+                [class.is-invalid]="receiptForm.get('purchaseOrderId')?.invalid && receiptForm.get('purchaseOrderId')?.touched">
+                <option value="">Seleccionar orden</option>
+                <option *ngFor="let order of purchaseOrders" [value]="order.id">
+                  {{order.orderNumber}} - {{order.supplierName}}
+                </option>
+              </select>
+              <div class="invalid-feedback">
+                La orden de compra es requerida
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">Proveedor *</label>
+              <select 
+                class="form-select" 
+                formControlName="supplierId"
+                [class.is-invalid]="receiptForm.get('supplierId')?.invalid && receiptForm.get('supplierId')?.touched">
+                <option value="">Seleccionar proveedor</option>
+                <option *ngFor="let supplier of suppliers" [value]="supplier.id">{{supplier.name}}</option>
+              </select>
+              <div class="invalid-feedback">
+                El proveedor es requerido
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">Fecha de Recepción *</label>
+              <input 
+                type="date" 
+                class="form-control" 
+                formControlName="receiptDate"
+                [class.is-invalid]="receiptForm.get('receiptDate')?.invalid && receiptForm.get('receiptDate')?.touched">
+              <div class="invalid-feedback">
+                La fecha de recepción es requerida
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">Estado *</label>
+              <select 
+                class="form-select" 
+                formControlName="status"
+                [class.is-invalid]="receiptForm.get('status')?.invalid && receiptForm.get('status')?.touched">
+                <option [value]="ReceiptStatus.PENDING">Pendiente</option>
+                <option [value]="ReceiptStatus.PARTIAL">Parcial</option>
+                <option [value]="ReceiptStatus.COMPLETE">Completado</option>
+                <option [value]="ReceiptStatus.CANCELLED">Cancelado</option>
+              </select>
+            </div>
+            
+            <div class="col-12">
+              <label class="form-label">Notas</label>
+              <textarea 
+                class="form-control" 
+                rows="3" 
+                formControlName="notes"
+                placeholder="Observaciones sobre la recepción..."></textarea>
+            </div>
+          </div>
+          
+          <!-- Items Section -->
+          <div class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Items Recibidos</h6>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="addItem()">
+                <i class="fas fa-plus me-1"></i>Agregar Item
+              </button>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 25%">Producto</th>
+                    <th style="width: 15%">Cant. Pedida</th>
+                    <th style="width: 15%">Cant. Recibida</th>
+                    <th style="width: 15%">Precio Unit.</th>
+                    <th style="width: 15%">Subtotal</th>
+                    <th style="width: 10%">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody formArrayName="items">
+                  <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i">
+                    <td>
+                      <select class="form-select" formControlName="productId" [class.is-invalid]="item.get('productId')?.invalid && item.get('productId')?.touched">
+                        <option value="">Seleccionar producto</option>
+                        <option *ngFor="let product of products" [value]="product.id">{{product.name}}</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        formControlName="orderedQuantity"
+                        min="0"
+                        step="1"
+                        [class.is-invalid]="item.get('orderedQuantity')?.invalid && item.get('orderedQuantity')?.touched">
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        formControlName="receivedQuantity"
+                        min="0"
+                        step="1"
+                        (input)="calculateItemSubtotal(i)"
+                        [class.is-invalid]="item.get('receivedQuantity')?.invalid && item.get('receivedQuantity')?.touched">
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        formControlName="unitPrice"
+                        min="0"
+                        step="0.01"
+                        (input)="calculateItemSubtotal(i)"
+                        [class.is-invalid]="item.get('unitPrice')?.invalid && item.get('unitPrice')?.touched">
+                    </td>
+                    <td>
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        formControlName="subtotal"
+                        readonly
+                        style="background-color: #f8f9fa;">
+                    </td>
+                    <td class="text-center">
+                      <button 
+                        type="button" 
+                        class="btn btn-outline-danger btn-sm" 
+                        (click)="removeItem(i)"
+                        title="Eliminar item">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="items.length === 0">
+                    <td colspan="6" class="text-center text-muted py-3">
+                      No hay items agregados
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="receiptForm.invalid">
+            <i class="fas fa-save me-2"></i>
+            {{editingReceipt ? 'Actualizar' : 'Crear'}} Recepción
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Background -->
+<div class="modal-backdrop fade" [class.show]="showModal" *ngIf="showModal" (click)="closeModal()"></div>

@@ -1,0 +1,344 @@
+<div class="container-fluid main-container">
+  <!-- Header -->
+  <app-navbar></app-navbar>
+
+  <div class="container">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-exchange-alt text-primary me-2"></i>Gestión de Stock
+        </h2>
+        <p class="text-muted mb-0">Control de entradas y salidas de inventario</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-custom" (click)="showForm = !showForm">
+          <i class="fas fa-plus me-2"></i>Nuevo Movimiento
+        </button>
+        <button class="btn btn-success btn-custom" (click)="exportMovements()">
+          <i class="fas fa-download me-2"></i>Exportar
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card card-custom bg-primary text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{totalMovements}}</h4>
+                <p class="mb-0">Total Movimientos</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-list fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-custom bg-success text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{formatCurrency(entriesValue)}}</h4>
+                <p class="mb-0">Entradas</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-arrow-up fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-custom bg-danger text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{formatCurrency(exitsValue)}}</h4>
+                <p class="mb-0">Salidas</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-arrow-down fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-custom" [class]="netValue >= 0 ? 'bg-info' : 'bg-warning'">
+          <div class="card-body text-white">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="mb-0">{{formatCurrency(netValue)}}</h4>
+                <p class="mb-0">Saldo Neto</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-balance-scale fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Movement Form -->
+    <div class="row mb-4" *ngIf="showForm">
+      <div class="col-12">
+        <div class="card card-custom">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-plus me-2"></i>Nuevo Movimiento de Stock
+            </h5>
+          </div>
+          <div class="card-body">
+            <form [formGroup]="movementForm" (ngSubmit)="onSubmit()">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Producto *</label>
+                  <select class="form-select" formControlName="productId" (change)="onProductChange()"
+                          [class.is-invalid]="movementForm.get('productId')?.invalid && movementForm.get('productId')?.touched">
+                    <option value="">Seleccionar producto</option>
+                    <option [value]="product.id" *ngFor="let product of products">
+                      {{product.code}} - {{product.name}} (Stock: {{product.currentStock}})
+                    </option>
+                  </select>
+                  <div class="invalid-feedback">
+                    El producto es requerido
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Tipo de Movimiento *</label>
+                  <select class="form-select" formControlName="movementType"
+                          [class.is-invalid]="movementForm.get('movementType')?.invalid && movementForm.get('movementType')?.touched">
+                    <option value="">Seleccionar tipo</option>
+                    <option [value]="MovementType.ENTRY">Entrada</option>
+                    <option [value]="MovementType.EXIT">Salida</option>
+                    <option [value]="MovementType.ADJUSTMENT">Ajuste</option>
+                  </select>
+                  <div class="invalid-feedback">
+                    El tipo de movimiento es requerido
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Razón *</label>
+                  <select class="form-select" formControlName="reason"
+                          [class.is-invalid]="movementForm.get('reason')?.invalid && movementForm.get('reason')?.touched">
+                    <option value="">Seleccionar razón</option>
+                    <option [value]="MovementReason.PURCHASE">Compra</option>
+                    <option [value]="MovementReason.SALE">Venta</option>
+                    <option [value]="MovementReason.RETURN">Devolución</option>
+                    <option [value]="MovementReason.DAMAGE">Daño</option>
+                    <option [value]="MovementReason.LOSS">Pérdida</option>
+                    <option [value]="MovementReason.ADJUSTMENT">Ajuste</option>
+                    <option [value]="MovementReason.INITIAL_STOCK">Stock Inicial</option>
+                  </select>
+                  <div class="invalid-feedback">
+                    La razón es requerida
+                  </div>
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label">Cantidad *</label>
+                  <input type="number" class="form-control" formControlName="quantity" min="0.01" step="0.01"
+                         [class.is-invalid]="movementForm.get('quantity')?.invalid && movementForm.get('quantity')?.touched">
+                  <div class="invalid-feedback">
+                    La cantidad debe ser mayor a 0
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Costo Unitario *</label>
+                  <div class="input-group">
+                    <span class="input-group-text">€</span>
+                    <input type="number" class="form-control" formControlName="unitCost" min="0" step="0.01"
+                           [class.is-invalid]="movementForm.get('unitCost')?.invalid && movementForm.get('unitCost')?.touched">
+                  </div>
+                  <div class="invalid-feedback">
+                    El costo debe ser mayor o igual a 0
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Referencia</label>
+                  <input type="text" class="form-control" formControlName="reference" placeholder="Ej: PO-2024-001">
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Costo Total</label>
+                  <div class="input-group">
+                    <span class="input-group-text">€</span>
+                    <input type="text" class="form-control" 
+                           [value]="formatCurrency((movementForm.get('quantity')?.value || 0) * (movementForm.get('unitCost')?.value || 0))" 
+                           readonly>
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label">Stock Resultante</label>
+                  <input type="text" class="form-control" 
+                         [value]="getResultingStock()" 
+                         readonly>
+                </div>
+
+                <div class="col-md-12">
+                  <label class="form-label">Notas</label>
+                  <textarea class="form-control" formControlName="notes" rows="2" placeholder="Observaciones adicionales"></textarea>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <button type="submit" class="btn btn-primary me-2" [disabled]="movementForm.invalid">
+                  <i class="fas fa-save me-2"></i>Registrar Movimiento
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="resetForm()">
+                  <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card card-custom">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input type="text" class="form-control" [(ngModel)]="searchTerm" 
+                       (input)="applyFilters()" placeholder="Buscar por código, producto, referencia...">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" [(ngModel)]="movementTypeFilter" (change)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option [value]="MovementType.ENTRY">Entradas</option>
+                  <option [value]="MovementType.EXIT">Salidas</option>
+                  <option [value]="MovementType.ADJUSTMENT">Ajustes</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Producto</label>
+                <select class="form-select" [(ngModel)]="productFilter" (change)="applyFilters()">
+                  <option value="">Todos</option>
+                  <option [value]="product.id" *ngFor="let product of products">{{product.code}}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input type="date" class="form-control" [(ngModel)]="dateFromFilter" (change)="applyFilters()">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input type="date" class="form-control" [(ngModel)]="dateToFilter" (change)="applyFilters()">
+              </div>
+              <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-secondary w-100" (click)="clearFilters()">
+                  <i class="fas fa-eraser"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-custom">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-list me-2"></i>Historial de Movimientos ({{filteredMovements.length}})
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th>Razón</th>
+                    <th>Cantidad</th>
+                    <th>Costo Unit.</th>
+                    <th>Costo Total</th>
+                    <th>Stock Anterior</th>
+                    <th>Stock Nuevo</th>
+                    <th>Referencia</th>
+                    <th>Usuario</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let movement of filteredMovements">
+                    <td>
+                      <small>{{formatDate(movement.createdAt)}}</small>
+                    </td>
+                    <td>
+                      <strong>{{movement.productCode}}</strong>
+                      <br>
+                      <small class="text-muted">{{movement.productName}}</small>
+                    </td>
+                    <td>
+                      <span class="badge" 
+                            [class]="'bg-' + (movement.movementType === MovementType.ENTRY ? 'success' : movement.movementType === MovementType.EXIT ? 'danger' : 'warning')">
+                        <i [class]="getMovementTypeIcon(movement.movementType)" class="me-1"></i>
+                        {{movement.movementType === MovementType.ENTRY ? 'Entrada' : movement.movementType === MovementType.EXIT ? 'Salida' : 'Ajuste'}}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge bg-secondary">{{getReasonText(movement.reason)}}</span>
+                    </td>
+                    <td>
+                      <span [class]="getMovementTypeClass(movement.movementType)">
+                        <strong>{{movement.movementType === MovementType.ENTRY ? '+' : '-'}}{{movement.quantity}}</strong>
+                      </span>
+                    </td>
+                    <td>{{formatCurrency(movement.unitCost)}}</td>
+                    <td>
+                      <strong [class]="getMovementTypeClass(movement.movementType)">
+                        {{formatCurrency(movement.totalCost)}}
+                      </strong>
+                    </td>
+                    <td>{{movement.previousStock}}</td>
+                    <td>
+                      <strong>{{movement.newStock}}</strong>
+                      <br>
+                      <small [class]="getMovementTypeClass(movement.movementType)">
+                        {{movement.movementType === MovementType.ENTRY ? '+' : '-'}}{{movement.quantity}}
+                      </small>
+                    </td>
+                    <td>
+                      <span *ngIf="movement.reference">{{movement.reference}}</span>
+                      <span *ngIf="!movement.reference" class="text-muted">-</span>
+                      <br>
+                      <small class="text-muted" *ngIf="movement.notes">{{movement.notes}}</small>
+                    </td>
+                    <td>
+                      <small>{{movement.userName}}</small>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div *ngIf="filteredMovements.length === 0" class="text-center py-5">
+              <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+              <p class="text-muted">No se encontraron movimientos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
