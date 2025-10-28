@@ -11,6 +11,7 @@ import { StockComponent } from './pages/inventory/stock/stock.component';
 import { SuppliersComponent } from './pages/purchasing/suppliers/suppliers.component';
 import { OrdersComponent } from './pages/purchasing/orders/orders.component';
 import { ReceiptsComponent } from './pages/purchasing/receipts/receipts.component';
+import { CustomersComponent } from './pages/customers/customers.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -33,6 +34,9 @@ export const routes: Routes = [
   { path: 'purchasing/suppliers', component: SuppliersComponent },
   { path: 'purchasing/orders', component: OrdersComponent },
   { path: 'purchasing/receipts', component: ReceiptsComponent },
+  
+  // Customer routes
+  { path: 'customers', component: CustomersComponent },
   
   { path: '**', redirectTo: '/home' }
 ];
