@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { CashFlowEntry, CashFlowType, CashFlowCategory } from '../../../models/accounting.models';
 import { NavbarComponent } from '../../../components/shared/navbar/navbar.component';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-cash-flow',
@@ -196,10 +197,48 @@ export class CashFlowComponent implements OnInit {
   }
 
   deleteEntry(id: string) {
-    if (confirm('¿Está seguro de eliminar este movimiento?')) {
-      this.cashFlowEntries = this.cashFlowEntries.filter(entry => entry.id !== id);
-      this.applyFilters();
-    }
+    const entry = this.cashFlowEntries.find(e => e.id === id);
+    if (!entry) return;
+
+    Swal.fire({
+      title: '¿Eliminar Movimiento?',
+      html: `
+        <div class="text-start">
+          <p>¿Estás seguro de que deseas eliminar este movimiento de flujo de caja?</p>
+          <div class="alert alert-warning">
+            <strong>Fecha:</strong> ${this.formatDate(entry.date)}<br>
+            <strong>Descripción:</strong> ${entry.description}<br>
+            <strong>Tipo:</strong> ${this.getTypeName(entry.type)}<br>
+            <strong>Monto:</strong> ${this.formatCurrency(entry.amount)}
+          </div>
+          <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Esta acción no se puede deshacer.</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'swal-popup',
+        title: 'swal-title'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.cashFlowEntries = this.cashFlowEntries.filter(entry => entry.id !== id);
+        this.applyFilters();
+        this.calculateSummary();
+        
+        Swal.fire({
+          title: '¡Eliminado!',
+          text: 'El movimiento ha sido eliminado exitosamente.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    });
   }
 
   resetForm() {
